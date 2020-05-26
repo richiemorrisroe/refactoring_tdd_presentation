@@ -1,0 +1,187 @@
+* Blurb :noexport:
+
+Title: Seeing the Light with Refactoring and Testing: A guide for the data professional
+- Tired of re-running scripts? 
+- Confused when you return to a project/analysis six months later?
+- Mystified by the decisions that others (including past you) have made in your code-base?
+- Tormented by mysterious failures? 
+
+This talk is for the practical data person who doesn't have time for software engineering,
+but whose output is code. 
+
+We'll cover the motivation, and some definitions of legacy code;
+followed by a pitch for the tools to solve these problems: refactoring
+and testing; concluded with some advice on a better strategy for your
+future projects (Test-Driven Development).
+
+Speaker: 
+Richie has been fighting with legacy code (often his own) for
+many years, and has recently found a religion that helps him to make
+sense of all the complexity of modern data and software. Join him on a
+journey to happiness and enlightment.
+
+* Refactorings in R
+
+Shamelessly stolen from the [[https://martinfowler.com/articles/refactoring-2nd-ed.html][book]].
+
+He suggests that these be translated into other languages, 
+python has lots of examples but R has very few. 
+
+
+
+** Data Scientists and Code
+- An awful lot of us produce our results/analyses through code
+- Much of this is ad-hoc investigations
+- Often these investigations produce output which others want
+- You create a cron job
+- Congratulations, you are now supporting production code [fn:2]
+** My background
+- I trained as a psychologist
+- I like numbers
+- So I ended up as a data scientist
+- At no point have I ever had a class on coding
+- I haven't even had that many classes on statistics
+** So why are you even doing this talk?
+- Because I have learned, from bitter, bitter experience that this
+  stuff is important
+- People (hopefully) make decisions as a result of our analyses
+- Often, these decisions can have far-ranging impacts, most of which
+  are impossible [fn:3] to foresee
+- As professionals, we have an obligation to make sure these results
+  are correct
+
+- This means we need to make sure our code is correct
+
+** This Talk
+- I will talk about tools to improve the quality of code, and our
+  confidence in it
+- These tools are:
+  - Automated testing
+  - Refactoring
+  - Test-Driven Development
+
+** Before Refactoring
+- You *must* right tests
+- Otherwise you [fn:1] *will* introduce bugs
+** Types of Testing
+- Individual functions: unit testing
+- Overall application: functional testing
+- Lots of space between these two points
+
+** My Code is so awful that it can't be tested
+- This is depressingly normal
+- You want some kind of characteristic test
+- This is often a dataframe type structure
+- The quickest test is to ensure that both dataframes are equal
+- There is a /wonderful/ book that guides you through this
+** Working Effectively with Legacy Code
+- [[https://www.amazon.co.uk/Working-Effectively-Legacy-Michael-Feathers/dp/0131177052][The book]], by Michael Feathers is really useful
+- Legacy code = code without tests
+- Book is based on particular problems
+- And provides approaches for solving them
+- Catolog of refactorings that can (theoretically) be done without
+  tests [fn:4]
+** Characterisation Tests
+
+#+begin_src R :session :eval no
+  require(testthat)
+  output_old <- readr::read_csv('older_data_from_before_changes.csv',
+                                col_types=NULL) # you'll need this argument
+  test_that('output old = output new', all.equal(output_old, output_new))
+#+end_src
+- capture how the system behaves right now, and make sure it doesn't change
+- This simple test can allow you to make a /lot/ of progress relatively quickly
+- this tests are useful to help build structure and get other tests in place
+- but they prevent you from improving the code in pretty much any way
+- scaffolding for future tests
+** Seams
+- This is one of the most interesting parts of WELC, which defines a
+  seam as a place where you can alter what code runs without changing any code
+- For instance, if you have some kind of folder with different
+  versions of code then you can create a seam by changing which folder is pointed to
+- This is also a very quick way of getting characterisation tests
+- The simplest example is mocking out a package/script file/module by changing
+  the path
+** First Steps
+- Gather the source files you are interested in
+- Run them, make sure they work. 
+- DO NOT SKIP THIS STEP!!!
+** My Example
+- Its based on the irish property market data
+- I have been working on and off on this for a number of years
+- I have multiple folders, datasets and scripts that perform data
+  loading, processing and modelling
+- I now want to turn this into an interactive app, and keep it updated
+- I aim to add tests and refactor to make it easier for me to build on
+  top of this foundation
+** First Practical Step
+   #+begin_src R :session :results none :tangle r-build.R
+     require(devtools)
+     if (!dir.exists("ppr")) {
+       devtools::create("ppr")
+     }
+
+   #+end_src
+
+- This creates an R package for us
+
+** Why a package?
+- Lots of good things:
+  - automated dependency management
+  - easy documenting facilities (with roxygen2)
+  - easy to run tests (with testthat)
+  - check is just a bunch of better programming practices
+
+- Bad things:
+  - more effort
+  - appeasing the mighty gods of check takes time
+** Next steps
+- We have three scripts:
+  - prep_modelling.R
+  - feature_engineering.R
+  - models.R
+** First, generate or create ground truth data
+- Our scripts need to be run in order
+- So, we can use the boundaries between them as points where we can
+  introduce test points
+- However, our scripts suck and therefore we don't have any convenient
+  boundaries available
+#+begin_src 
+
+#+end_src
+
+
+** Top Six Refactorings
+
+*** Extract Function
+
+*** Inline Function
+
+*** Extract Variable
+
+*** Inline Variable
+
+*** Change Function Declaration
+
+*** Encapsulate Variable
+
+*** Rename Variable
+
+*** Introduce Parameter Object
+
+*** Combine Functions into Class
+
+*** Combine Functions into Transform
+
+*** Split Phase
+
+* Footnotes
+
+[fn:4] you *always* want at least some characterisation tests (i.e. output) 
+
+[fn:3] i.e. hard 
+
+[fn:2] in the sense that others rely on it. SQL tables are often the
+worst offenders (as they are often the easiest to create)
+
+[fn:1] or at least me 
