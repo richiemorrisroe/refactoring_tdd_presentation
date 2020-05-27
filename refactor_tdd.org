@@ -140,6 +140,16 @@ python has lots of examples but R has very few.
   - prep_modelling.R
   - feature_engineering.R
   - models.R
+** Step 0: Create a custom environment
+- I use [[https://docs.conda.io/en/latest/][conda]] for this
+- It supports multiple languages, and compiled dependencies
+- This is pretty awesome for python, and its a little more
+  light-weight than Docker
+- It supports R (and apparently loads of other languages too)
+#+begin_src sh
+conda create -n PPR-r r=3.6.3 
+conda env export --name ENVNAME > envname.yml
+#+end_src
 ** First, generate or create ground truth data
 - Our scripts need to be run in order
 - So, we can use the boundaries between them as points where we can
@@ -147,8 +157,110 @@ python has lots of examples but R has very few.
 - However, our scripts suck and therefore we don't have any convenient
   boundaries available
 #+begin_src 
+rm(list=ls())
+source("scripts/prep_modelling.R")
+#+end_src
+- Simplest way to run script
+- We can then look at what it produces and decide what to test
+- Biggest benefit here is not having to change anything
+** Assessing what we need
+   #+begin_src R :session :exports both
+   ls()
+   #+end_src
+
+   #+RESULTS:
+   | daily_data                 |
+   | fix_price                  |
+   | g                          |
+   | generate_bootstrap_results |
+   | l                          |
+   | no_postcode_county         |
+   | normalise_names            |
+   | obj                        |
+   | post_codes_table           |
+   | postcode_county            |
+   | ppr                        |
+   | ppr_bootstrap_indices      |
+   | ppr_not_train              |
+   | ppr_test                   |
+   | ppr_test_indices           |
+   | ppr_train                  |
+   | ppr_train_indices          |
+   | ppr_train2                 |
+   | ppr10                      |
+   | ppr2                       |
+   | ppr3                       |
+   | ppr4                       |
+   | ppr5                       |
+   | ppr6                       |
+   | ppr7                       |
+   | ppr8                       |
+   | ppr9                       |
+
+
+- We have a bunch of dataframes, some functions and a few intermediate results
+- However, the best pinch point is ppr_train and test, as they are
+  downstream of all our feature engineering
+** First Steps First
+- Move the functions we have to a file
+- Change our script to load the package we've just created
+#+begin_src R :tangle ppr/R/ppr.R
+normalise_names <- function(df) {
+        nms <- names(df)
+        normed <- iconv( # covert from one encoding to another
+                tolower(
+                        gsub("([[:space:]]|[[:punct:]])+", "_",
+                                x = nms
+                        )
+                ),
+                "latin1", # from encoding
+                "ASCII", # to encoding
+                sub = ""
+        )
+        drop_usc <- gsub("([a-z_])_*$",
+                         "\\1", x = normed) # drop extra underscores
+        names(df) <- drop_usc # update names
+        df # return dataframe
+}
+fix_price <- function(x) {
+        nopunct <- gsub(",|\\.", "", x = x)
+        nums <- as.numeric(
+                iconv(nopunct, "latin1",
+                        "ASCII",
+                        sub = ""
+                )
+        )
+}
+
+generate_bootstrap_results <- function(df, ind) {
+        # results list (always generate something to hold your results first)
+        trainresults <- vector(mode = "list", length = 10)
+        for (i in 1:length(ind)) {
+                nm <- names(ind[i])
+                train <- df[ind[[i]], ]
+                test <- df[-ind[[i]], ]
+                model <- lm(log_price ~ property_size_description + year,
+                        data = train
+                )
+                preds <- predict(model,
+                        newdata = test, type = "response",
+                        na.action = na.exclude
+                )
+                trainresults[[i]] <- preds
+        }
+        names(trainresults) <- names(ind)
+        trainresults
+}
 
 #+end_src
+- We now have a package with code in it
+- Next step is to add some tests
+#+begin_src R :session :tangle r-build.R
+devtools::use_testthat()
+#+end_src
+
+#+RESULTS:
+: /home/richie/Dropbox/Code/Rlang/refactoring_and_tdd
 
 
 ** Top Six Refactorings
