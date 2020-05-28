@@ -156,6 +156,13 @@ conda env export --name ENVNAME > envname.yml
   introduce test points
 - However, our scripts suck and therefore we don't have any convenient
   boundaries available
+#+begin_src R :tangle ppr/data-raw/DATASET.R
+ppr <- readxl::read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
+set.seed(49)
+ppr_sample <- dplyr::sample_frac(ppr, size = 0.05)
+ppr <- ppr_sample
+usethis::use_data(ppr, overwrite = TRUE)
+#+end_src
 #+begin_src 
 rm(list=ls())
 source("scripts/prep_modelling.R")
@@ -204,7 +211,7 @@ source("scripts/prep_modelling.R")
 ** First Steps First
 - Move the functions we have to a file
 - Change our script to load the package we've just created
-#+begin_src R :tangle ppr/R/ppr.R
+#+begin_src R :tangle ppr/R/ppr.R :exports none
 normalise_names <- function(df) {
         nms <- names(df)
         normed <- iconv( # covert from one encoding to another
@@ -223,7 +230,7 @@ normalise_names <- function(df) {
         df # return dataframe
 }
 fix_price <- function(x) {
-        nopunct <- gsub(",|\\.", "", x = x)
+        nopunct <- gsub(",", "", x = x)
         nums <- as.numeric(
                 iconv(nopunct, "latin1",
                         "ASCII",
@@ -255,13 +262,134 @@ generate_bootstrap_results <- function(df, ind) {
 #+end_src
 - We now have a package with code in it
 - Next step is to add some tests
-#+begin_src R :session :tangle r-build.R
-devtools::use_testthat()
+#+begin_src sh :results none
+mkdir ppr/tests
+mkdir ppr/tests/testthat/
+touch ppr/tests/testthat/first_tests.R
 #+end_src
+** Write some tests
 
-#+RESULTS:
-: /home/richie/Dropbox/Code/Rlang/refactoring_and_tdd
+#+begin_src R :tangle ppr/tests/testthat/test_first.R
+  require(testthat)
+  context("load data")
+  dat  <- load_data("~/Dropbox/PPR/PPR-ALL.xlsx")
+  test_that('load_data returns a tibble',
+    {expect_equal(
+              class(dat)[1], "tbl_df")})
+#+end_src
+- The first thing we do is write a load\_data function
+- this allows us to later abstract how/where we load the data from
+  without needing to change (as much code)
+- Note that this function doesn't exist yet
+- Let's write it
+** Loading Data
 
+#+begin_src R :session :tangle ppr/R/ppr.R :exports none
+  load_data <- function(path) {
+    ppr <- readxl::read_excel(path, sheet = "PPR-ALL")
+    return(ppr)
+    }
+#+end_src
+- This wouldn't normally make a whole lot of sense
+- But I know that I am probably going to move to SQL storage with this
+  project
+- So centralising the data loading does make sense.
+** Test Names
+   #+begin_src R :tangle ppr/tests/testthat/test_first.R
+     finished_names <- as.character(c("date_of_sale_dd_mm_yyyy",   "address", "postal_code", "county",                   
+       "price", "not_full_market_price","vat_exclusive",
+       "description_of_property",  "property_size_description"))
+
+     test_that('normalise_names works',
+               {expect_equal(finished_names, names(normalise_names(dat)))})
+   #+end_src
+- We just grab the output of normalise_names, and test that
+- this is a shitty test; try to test the actual invariants on edge cases
+** Test Fix Price
+   #+begin_src R :tangle ppr/tests/testthat/test_first.R
+
+     test_that('fix price returns the correct price',
+               expect_equal(3e6, fix_price("3,000,000")))
+   #+end_src
+- All good
+- However, I think I spotted a bug in fix_price
+** Fix Price Bug
+   #+begin_src R :exports code
+     fix_price <- function(x) {
+             nopunct <- gsub(",|\\.", "", x = x)
+             nums <- as.numeric(
+                     iconv(nopunct, "latin1",
+                             "ASCII",
+                             sub = ""
+                     )
+             )
+     }
+   #+end_src
+- Can you spot it?
+** Test Case for Bug
+   #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
+   
+     test_that('fix price returns the correct price',
+               expect_equal(3000000.01, fix_price("3,000,000.01")))
+
+   #+end_src
+- We actually shouldn't strip the dots, as they are valid in numbers
+- We have a failing test, so we can fix this code (and make sure it
+  stays fixed, which is normally more valuable)
+** Fix Price Fix
+   #+begin_src R :exports code
+     ##' fix_price
+     ##'
+     ##' remove commas from a vector. Normally used to handle numbers with commas
+     ##' @title fix_price
+     ##' @param x a vector 
+     ##' @return a numeric vector
+     ##' @author richie
+     fix_price <- function(x) {
+             nopunct <- gsub(",", "", x = x)
+             nums <- as.numeric(
+                     iconv(nopunct, "latin1",
+                             "ASCII",
+                             sub = ""
+                     )
+             )
+     }
+   #+end_src
+- We just remove the part of the gsub call that matches dots
+- Now all our tests pass
+** Generate Bootstrap Results
+- I'll leave testing this for now, as I probably need to do the
+  feature normalisation first
+** Break out components
+- You want to break out chunks of code into manageable (well-named) sizes
+- This is the extract function refactoring (probably the most common)
+#+begin_src R :exports code
+  ppr3 <- mutate(ppr2,
+                 price = price / 100,
+                 is_big = ifelse(price >= 2e6, "Big", "Not Big"))
+#+end_src
+- This has a bug now, which we should fix first
+** Write test for new function
+   #+begin_src R :tangle ppr/tests/testthat/test_first.R
+     test_df_output  <- readr::read_csv("../mark_values_as_large_test_data_done.csv")
+     test_df_input  <- readr::read_csv("../mark_values_as_large_test_data.csv")
+     test_that('mark values as large works', {
+       expect_equal(mark_values_as_large(test_df_input, large = 1e6),
+                    test_df_output)
+     })
+
+   #+end_src
+** Write the actual function
+#+begin_src R :tangle ppr/R/ppr.R
+  mark_values_as_large <- function(df, large) {
+    large <- rlang::enquo(large)
+    ppr3 <- dplyr::mutate(df,
+                          is_big = ifelse(.data$price >= !!large,
+                                          "Big", "Not Big"))
+    return(ppr3)
+    }
+#+end_src
+- By which I mean copying code into a function and adding a return statement
 
 ** Top Six Refactorings
 

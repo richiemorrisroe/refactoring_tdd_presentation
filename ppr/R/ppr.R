@@ -1,6 +1,6 @@
 normalise_names <- function(df) {
         nms <- names(df)
-        normed <- iconv(# covert from one encoding to another
+        normed <- iconv( # covert from one encoding to another
                 tolower(
                         gsub("([[:space:]]|[[:punct:]])+", "_",
                                 x = nms
@@ -16,7 +16,7 @@ normalise_names <- function(df) {
         df # return dataframe
 }
 fix_price <- function(x) {
-        nopunct <- gsub(",|\\.", "", x = x)
+        nopunct <- gsub(",", "", x = x)
         nums <- as.numeric(
                 iconv(nopunct, "latin1",
                         "ASCII",
@@ -44,3 +44,16 @@ generate_bootstrap_results <- function(df, ind) {
         names(trainresults) <- names(ind)
         trainresults
 }
+
+load_data <- function(path) {
+  ppr <- readxl::read_excel(path, sheet = "PPR-ALL")
+  return(ppr)
+  }
+
+mark_values_as_large <- function(df, large) {
+  large <- rlang::enquo(large)
+  ppr3 <- dplyr::mutate(df,
+                        is_big = ifelse(.data$price >= !!large,
+                                        "Big", "Not Big"))
+  return(ppr3)
+  }
