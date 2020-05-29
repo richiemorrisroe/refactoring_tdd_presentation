@@ -118,9 +118,13 @@ python has lots of examples but R has very few.
    #+begin_src R :session :results none :tangle r-build.R
      require(devtools)
      if (!dir.exists("ppr")) {
-       devtools::create("ppr")
+       usethis::create_package("ppr")
      }
 
+     usethis::use_package("dplyr")
+     usethis::use_package("rlang")
+     usethis::use_package("readxl")
+     usethis::use_data_raw()
    #+end_src
 
 - This creates an R package for us
@@ -206,8 +210,14 @@ source("scripts/prep_modelling.R")
 
 
 - We have a bunch of dataframes, some functions and a few intermediate results
-- However, the best pinch point is ppr_train and test, as they are
+- However, the best *pinch point* is ppr_train and test, as they are
   downstream of all our feature engineering
+** Pinch Points
+- Another concept from WELC
+- Refers to the point where you can test as much as possible of functionalities
+- Here, it's ppr_test and train, as they are our output for the next
+  script
+
 ** First Steps First
 - Move the functions we have to a file
 - Change our script to load the package we've just created
