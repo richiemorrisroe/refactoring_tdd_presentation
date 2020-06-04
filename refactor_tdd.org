@@ -1,3 +1,14 @@
+# #+SETUPFILE: ~/Dropbox/org-minimal-html-theme/org-minimal-theme.setup
+# #+LaTeX_CLASS: beamer
+# #+LaTeX_CLASS_OPTIONS: [presentation]
+# #+BEAMER_THEME: Berkeley
+# #+COLUMNS: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+# #+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
+# #+BIND: org-latex-image-default-width 0.7\linewidth
+# #+BIND: org-latex-image-default-height 0.7\linewidth
+# #+PROPERTY: header-args:R :session *R*  :eval no-export :height 360 :width 360
+# #+OPTIONS: tasks:nil
+# #+OPTIONS: toc:nil
 * Blurb :noexport:
 
 Title: Seeing the Light with Refactoring and Testing: A guide for the data professional
@@ -152,7 +163,7 @@ python has lots of examples but R has very few.
 - It supports R (and apparently loads of other languages too)
 #+begin_src sh
 conda create -n PPR-r r=3.6.3 
-conda env export --name ENVNAME > envname.yml
+conda env export --name PPR-r > PPR-r.yml
 #+end_src
 ** First, generate or create ground truth data
 - Our scripts need to be run in order
@@ -160,13 +171,7 @@ conda env export --name ENVNAME > envname.yml
   introduce test points
 - However, our scripts suck and therefore we don't have any convenient
   boundaries available
-#+begin_src R :tangle ppr/data-raw/DATASET.R
-ppr <- readxl::read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
-set.seed(49)
-ppr_sample <- dplyr::sample_frac(ppr, size = 0.05)
-ppr <- ppr_sample
-usethis::use_data(ppr, overwrite = TRUE)
-#+end_src
+
 #+begin_src 
 rm(list=ls())
 source("scripts/prep_modelling.R")
@@ -217,7 +222,18 @@ source("scripts/prep_modelling.R")
 - Refers to the point where you can test as much as possible of functionalities
 - Here, it's ppr_test and train, as they are our output for the next
   script
-
+** Add data to package
+#+begin_src R :tangle ppr/data-raw/DATASET.R
+ppr <- readxl::read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
+set.seed(49)
+ppr_sample <- dplyr::sample_frac(ppr, size = 0.05)
+ppr <- ppr_sample
+usethis::use_data(ppr, overwrite = TRUE)
+#+end_src
+- This is important for running the tests
+- You /can/ use absolute paths and stuff, but it's pretty ugly
+- CRAN strongly suggests that data be less than 5Mb, so we take a 5%
+  sample
 ** First Steps First
 - Move the functions we have to a file
 - Change our script to load the package we've just created
@@ -273,9 +289,9 @@ generate_bootstrap_results <- function(df, ind) {
 - We now have a package with code in it
 - Next step is to add some tests
 #+begin_src sh :results none
-mkdir ppr/tests
-mkdir ppr/tests/testthat/
-touch ppr/tests/testthat/first_tests.R
+  mkdir ppr/tests
+  mkdir ppr/tests/testthat/
+  touch ppr/tests/testthat/test_first.R
 #+end_src
 ** Write some tests
 
@@ -306,9 +322,10 @@ touch ppr/tests/testthat/first_tests.R
 - So centralising the data loading does make sense.
 ** Test Names
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
-     finished_names <- as.character(c("date_of_sale_dd_mm_yyyy",   "address", "postal_code", "county",                   
-       "price", "not_full_market_price","vat_exclusive",
-       "description_of_property",  "property_size_description"))
+     finished_names <- as.character(c("date_of_sale_dd_mm_yyyy",
+                                      "address", "postal_code", "county",                   
+                                      "price", "not_full_market_price","vat_exclusive",
+                                      "description_of_property",  "property_size_description"))
 
      test_that('normalise_names works',
                {expect_equal(finished_names, names(normalise_names(dat)))})
@@ -378,11 +395,11 @@ touch ppr/tests/testthat/first_tests.R
                  price = price / 100,
                  is_big = ifelse(price >= 2e6, "Big", "Not Big"))
 #+end_src
-- This has a bug now, which we should fix first
+
 ** Write test for new function
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
-     test_df_output  <- readr::read_csv("../mark_values_as_large_test_data_done.csv")
-     test_df_input  <- readr::read_csv("../mark_values_as_large_test_data.csv")
+     test_df_output  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data_done.csv")
+     test_df_input  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data.csv")
      test_that('mark values as large works', {
        expect_equal(mark_values_as_large(test_df_input, large = 1e6),
                     test_df_output)
@@ -400,6 +417,27 @@ touch ppr/tests/testthat/first_tests.R
     }
 #+end_src
 - By which I mean copying code into a function and adding a return statement
+- This is the *extract function* refactoring
+** Opposite but Equal
+- Sometimes, we actually want the function to be inlined
+- This is called *inline function*
+** Convert price to log
+- Logs are great
+- In general, if you have problems with a response or predictor
+  variable, you should log it and see if that helps
+#+begin_src R :session
+ppr4 <- mutate(ppr3, log_price = log(price, base = 10))
+#+end_src
+- Does this need to be a function?
+** Log function tests 
+   #+begin_src R :tangle ppr/tests/testthat/test_first.R
+     test_that('log(price)< price',{
+               new_df <-  log_column(df, column)
+               expect_lt(new_df$log_price,
+                         df$price)}
+               )
+   #+end_src
+
 
 ** Top Six Refactorings
 
