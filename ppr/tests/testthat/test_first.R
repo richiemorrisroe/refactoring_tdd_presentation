@@ -26,8 +26,33 @@ test_that('mark values as large works', {
                test_df_output)
 })
 
-test_that('log(price)< price',{
-          new_df <-  log_column(df, column)
-          expect_lt(new_df$log_price,
-                    df$price)}
+test_that('log(price)< price',
+{
+  data(ppr)
+  ppr2 <- normalise_names(ppr) %>% dplyr::mutate(price=fix_price(price))
+  new_df <-  log_column(ppr2, price)
+  expect_lt(new_df$log_price[1],
+                    ppr2$price[1])}
           )
+
+data(ppr)
+test_that('we have is_full_market_price column', {
+          ppr3 <- normalise_names(ppr) %>%
+            dplyr::mutate(price=fix_price(price)) %>%
+            log_column(price)
+          ppr4 <- invert_field(ppr3, not_full_market_price)
+          expect_equal(names(ppr4)[length(ppr4)], "is_full_market_price") }
+          )
+
+test_that('new property desc logic is the same as old',{
+          data(ppr)
+          ppr_input  <- normalise_names(ppr) %>%
+            mutate(price=fix_price(price)) %>%
+            mark_values_as_large(1e6) %>%
+            log_column(price) %>% 
+            invert_field(not_full_market_price)
+          ppr_old  <-
+            readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/ppr_data_cleaning_done.csv") %>%
+            mutate(property_size_description=as.character(property_size_description))
+          expect_equal(fix_property_description(ppr_input),
+                       ppr_old)})

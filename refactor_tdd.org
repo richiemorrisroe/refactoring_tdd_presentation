@@ -1,14 +1,14 @@
-# #+SETUPFILE: ~/Dropbox/org-minimal-html-theme/org-minimal-theme.setup
-# #+LaTeX_CLASS: beamer
-# #+LaTeX_CLASS_OPTIONS: [presentation]
-# #+BEAMER_THEME: Berkeley
-# #+COLUMNS: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
-# #+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
-# #+BIND: org-latex-image-default-width 0.7\linewidth
-# #+BIND: org-latex-image-default-height 0.7\linewidth
-# #+PROPERTY: header-args:R :session *R*  :eval no-export :height 360 :width 360
-# #+OPTIONS: tasks:nil
-# #+OPTIONS: toc:nil
+#+SETUPFILE: ~/Dropbox/org-minimal-html-theme/org-minimal-theme.setup
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [presentation]
+#+BEAMER_THEME: Berkeley
+#+COLUMNS: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+#+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
+#+BIND: org-latex-image-default-width 0.7\linewidth
+#+BIND: org-latex-image-default-height 0.7\linewidth
+#+PROPERTY: header-args:R :session *R*  :eval no-export :height 360 :width 360
+#+OPTIONS: tasks:nil
+#+OPTIONS: toc:nil
 * Blurb :noexport:
 
 Title: Seeing the Light with Refactoring and Testing: A guide for the data professional
@@ -40,19 +40,19 @@ python has lots of examples but R has very few.
 
 
 
-** Data Scientists and Code
+* Data Scientists and Code
 - An awful lot of us produce our results/analyses through code
 - Much of this is ad-hoc investigations
 - Often these investigations produce output which others want
 - You create a cron job
 - Congratulations, you are now supporting production code [fn:2]
-** My background
+* My background
 - I trained as a psychologist
 - I like numbers
 - So I ended up as a data scientist
 - At no point have I ever had a class on coding
 - I haven't even had that many classes on statistics
-** So why are you even doing this talk?
+* So why are you even doing this talk?
 - Because I have learned, from bitter, bitter experience that this
   stuff is important
 - People (hopefully) make decisions as a result of our analyses
@@ -63,7 +63,7 @@ python has lots of examples but R has very few.
 
 - This means we need to make sure our code is correct
 
-** This Talk
+* This Talk
 - I will talk about tools to improve the quality of code, and our
   confidence in it
 - These tools are:
@@ -71,28 +71,28 @@ python has lots of examples but R has very few.
   - Refactoring
   - Test-Driven Development
 
-** Before Refactoring
-- You *must* right tests
+* Before Refactoring
+- You *must* write tests
 - Otherwise you [fn:1] *will* introduce bugs
-** Types of Testing
+* Types of Testing
 - Individual functions: unit testing
 - Overall application: functional testing
 - Lots of space between these two points
 
-** My Code is so awful that it can't be tested
+* My Code is so awful that it can't be tested
 - This is depressingly normal
 - You want some kind of characteristic test
 - This is often a dataframe type structure
 - The quickest test is to ensure that both dataframes are equal
 - There is a /wonderful/ book that guides you through this
-** Working Effectively with Legacy Code
+* Working Effectively with Legacy Code
 - [[https://www.amazon.co.uk/Working-Effectively-Legacy-Michael-Feathers/dp/0131177052][The book]], by Michael Feathers is really useful
 - Legacy code = code without tests
 - Book is based on particular problems
 - And provides approaches for solving them
 - Catolog of refactorings that can (theoretically) be done without
   tests [fn:4]
-** Characterisation Tests
+* Characterisation Tests
 
 #+begin_src R :session :eval no
   require(testthat)
@@ -105,7 +105,7 @@ python has lots of examples but R has very few.
 - this tests are useful to help build structure and get other tests in place
 - but they prevent you from improving the code in pretty much any way
 - scaffolding for future tests
-** Seams
+* Seams
 - This is one of the most interesting parts of WELC, which defines a
   seam as a place where you can alter what code runs without changing any code
 - For instance, if you have some kind of folder with different
@@ -113,11 +113,11 @@ python has lots of examples but R has very few.
 - This is also a very quick way of getting characterisation tests
 - The simplest example is mocking out a package/script file/module by changing
   the path
-** First Steps
+* First Steps
 - Gather the source files you are interested in
 - Run them, make sure they work. 
 - DO NOT SKIP THIS STEP!!!
-** My Example
+* My Example
 - Its based on the irish property market data
 - I have been working on and off on this for a number of years
 - I have multiple folders, datasets and scripts that perform data
@@ -125,7 +125,7 @@ python has lots of examples but R has very few.
 - I now want to turn this into an interactive app, and keep it updated
 - I aim to add tests and refactor to make it easier for me to build on
   top of this foundation
-** First Practical Step
+* First Practical Step
    #+begin_src R :session :results none :tangle r-build.R
      require(devtools)
      if (!dir.exists("ppr")) {
@@ -140,7 +140,7 @@ python has lots of examples but R has very few.
 
 - This creates an R package for us
 
-** Why a package?
+* Why a package?
 - Lots of good things:
   - automated dependency management
   - easy documenting facilities (with roxygen2)
@@ -150,12 +150,12 @@ python has lots of examples but R has very few.
 - Bad things:
   - more effort
   - appeasing the mighty gods of check takes time
-** Next steps
+* Next steps
 - We have three scripts:
   - prep_modelling.R
   - feature_engineering.R
   - models.R
-** Step 0: Create a custom environment
+* Step 0: Create a custom environment
 - I use [[https://docs.conda.io/en/latest/][conda]] for this
 - It supports multiple languages, and compiled dependencies
 - This is pretty awesome for python, and its a little more
@@ -165,7 +165,7 @@ python has lots of examples but R has very few.
 conda create -n PPR-r r=3.6.3 
 conda env export --name PPR-r > PPR-r.yml
 #+end_src
-** First, generate or create ground truth data
+* First, generate or create ground truth data
 - Our scripts need to be run in order
 - So, we can use the boundaries between them as points where we can
   introduce test points
@@ -179,7 +179,7 @@ source("scripts/prep_modelling.R")
 - Simplest way to run script
 - We can then look at what it produces and decide what to test
 - Biggest benefit here is not having to change anything
-** Assessing what we need
+* Assessing what we need
    #+begin_src R :session :exports both
    ls()
    #+end_src
@@ -217,12 +217,12 @@ source("scripts/prep_modelling.R")
 - We have a bunch of dataframes, some functions and a few intermediate results
 - However, the best *pinch point* is ppr_train and test, as they are
   downstream of all our feature engineering
-** Pinch Points
+* Pinch Points
 - Another concept from WELC
 - Refers to the point where you can test as much as possible of functionalities
 - Here, it's ppr_test and train, as they are our output for the next
   script
-** Add data to package
+* Add data to package
 #+begin_src R :tangle ppr/data-raw/DATASET.R
 ppr <- readxl::read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
 set.seed(49)
@@ -234,7 +234,7 @@ usethis::use_data(ppr, overwrite = TRUE)
 - You /can/ use absolute paths and stuff, but it's pretty ugly
 - CRAN strongly suggests that data be less than 5Mb, so we take a 5%
   sample
-** First Steps First
+* First Steps First
 - Move the functions we have to a file
 - Change our script to load the package we've just created
 #+begin_src R :tangle ppr/R/ppr.R :exports none
@@ -293,7 +293,7 @@ generate_bootstrap_results <- function(df, ind) {
   mkdir ppr/tests/testthat/
   touch ppr/tests/testthat/test_first.R
 #+end_src
-** Write some tests
+* Write some tests
 
 #+begin_src R :tangle ppr/tests/testthat/test_first.R
   require(testthat)
@@ -308,7 +308,7 @@ generate_bootstrap_results <- function(df, ind) {
   without needing to change (as much code)
 - Note that this function doesn't exist yet
 - Let's write it
-** Loading Data
+* Loading Data
 
 #+begin_src R :session :tangle ppr/R/ppr.R :exports none
   load_data <- function(path) {
@@ -320,7 +320,7 @@ generate_bootstrap_results <- function(df, ind) {
 - But I know that I am probably going to move to SQL storage with this
   project
 - So centralising the data loading does make sense.
-** Test Names
+* Test Names
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
      finished_names <- as.character(c("date_of_sale_dd_mm_yyyy",
                                       "address", "postal_code", "county",                   
@@ -332,7 +332,7 @@ generate_bootstrap_results <- function(df, ind) {
    #+end_src
 - We just grab the output of normalise_names, and test that
 - this is a shitty test; try to test the actual invariants on edge cases
-** Test Fix Price
+* Test Fix Price
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
 
      test_that('fix price returns the correct price',
@@ -340,7 +340,7 @@ generate_bootstrap_results <- function(df, ind) {
    #+end_src
 - All good
 - However, I think I spotted a bug in fix_price
-** Fix Price Bug
+* Fix Price Bug
    #+begin_src R :exports code
      fix_price <- function(x) {
              nopunct <- gsub(",|\\.", "", x = x)
@@ -353,7 +353,7 @@ generate_bootstrap_results <- function(df, ind) {
      }
    #+end_src
 - Can you spot it?
-** Test Case for Bug
+* Test Case for Bug
    #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
    
      test_that('fix price returns the correct price',
@@ -363,7 +363,7 @@ generate_bootstrap_results <- function(df, ind) {
 - We actually shouldn't strip the dots, as they are valid in numbers
 - We have a failing test, so we can fix this code (and make sure it
   stays fixed, which is normally more valuable)
-** Fix Price Fix
+* Fix Price Fix
    #+begin_src R :exports code
      ##' fix_price
      ##'
@@ -384,10 +384,10 @@ generate_bootstrap_results <- function(df, ind) {
    #+end_src
 - We just remove the part of the gsub call that matches dots
 - Now all our tests pass
-** Generate Bootstrap Results
+* Generate Bootstrap Results
 - I'll leave testing this for now, as I probably need to do the
   feature normalisation first
-** Break out components
+* Break out components
 - You want to break out chunks of code into manageable (well-named) sizes
 - This is the extract function refactoring (probably the most common)
 #+begin_src R :exports code
@@ -396,17 +396,17 @@ generate_bootstrap_results <- function(df, ind) {
                  is_big = ifelse(price >= 2e6, "Big", "Not Big"))
 #+end_src
 
-** Write test for new function
-   #+begin_src R :tangle ppr/tests/testthat/test_first.R
-     test_df_output  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data_done.csv")
-     test_df_input  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data.csv")
-     test_that('mark values as large works', {
-       expect_equal(mark_values_as_large(test_df_input, large = 1e6),
-                    test_df_output)
-     })
+* Write test for new function
+  #+begin_src R :tangle ppr/tests/testthat/test_first.R
+    test_df_output  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data_done.csv")
+    test_df_input  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data.csv")
+    test_that('mark values as large works', {
+      expect_equal(mark_values_as_large(test_df_input, large = 1e6),
+                   test_df_output)
+    })
 
-   #+end_src
-** Write the actual function
+  #+end_src
+* Write the actual function
 #+begin_src R :tangle ppr/R/ppr.R
   mark_values_as_large <- function(df, large) {
     large <- rlang::enquo(large)
@@ -418,10 +418,10 @@ generate_bootstrap_results <- function(df, ind) {
 #+end_src
 - By which I mean copying code into a function and adding a return statement
 - This is the *extract function* refactoring
-** Opposite but Equal
+* Opposite but Equal
 - Sometimes, we actually want the function to be inlined
 - This is called *inline function*
-** Convert price to log
+* Convert price to log
 - Logs are great
 - In general, if you have problems with a response or predictor
   variable, you should log it and see if that helps
@@ -429,16 +429,193 @@ generate_bootstrap_results <- function(df, ind) {
 ppr4 <- mutate(ppr3, log_price = log(price, base = 10))
 #+end_src
 - Does this need to be a function?
-** Log function tests 
+* Log function tests 
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
-     test_that('log(price)< price',{
-               new_df <-  log_column(df, column)
-               expect_lt(new_df$log_price,
-                         df$price)}
+     test_that('log(price)< price',
+     {
+       data(ppr)
+       ppr2 <- normalise_names(ppr) %>% dplyr::mutate(price=fix_price(price))
+       new_df <-  log_column(ppr2, price)
+       expect_lt(new_df$log_price[1],
+                         ppr2$price[1])}
                )
    #+end_src
+- Obviously this fails again
+- One of the great things about TDD is that you end up needing to use
+  your API somewhere before you write it
+- This provides both documentation and a usability check
+* Log Column Function
+- Again, we need to do the pointless tidyverse dance because Hadley hates quotes
+#+begin_src R :tangle ppr/R/ppr.R
+  log_column <- function(df, col) {
+      col <- rlang::enquo(col)
+      res <- dplyr::mutate(df, log_price = log(!!col, base = 10))
+      return(res)
+      }
+#+end_src
+- This is beginning to annoy me a little less, from repetition
+* What not to functionalise
+- Exploratory analysis
+- There's loads of that in my scripts, for example
+#+begin_src R :session
+post_codes_table <-
+        with(ppr4, table(postal_code, useNA = "always")) %>%
+        as.data.frame() %>%
+        arrange(desc(Freq))
+head(post_codes_table, n = 12)
+#+end_src
+- This is to figure out what's going on
+- Not sure it makes a lot of sense here
+- If I'm doing the same stuff on a bunch of columns, a function is
+  useful, but otherwise it doesn't make much sense
+* Next Steps
+   #+begin_src R :session
+     ppr5 <- mutate(ppr4,
+             is_full_market_price = ifelse(
+                     not_full_market_price == "No",
+                     "Yes",
+                     "No"
+             )
+     ) %>%
+             select(-not_full_market_price) # remove old var - what happens if we don't?
+   #+end_src
+- So this is only done once, and is pretty specific
+- But it handles some ugly, ugly names
+- This is a *rename field* refactoring (which can be incredibly impactful)
+* Rename Field Test
+- First, we write a test
+#+begin_src R :tangle ppr/tests/testthat/test_first.R
+  data(ppr)
+  test_that('we have is_full_market_price column', {
+            ppr3 <- normalise_names(ppr) %>%
+              dplyr::mutate(price=fix_price(price)) %>%
+              log_column(price)
+            ppr4 <- invert_field(ppr3, not_full_market_price)
+            expect_equal(names(ppr4)[length(ppr4)], "is_full_market_price") }
+            )
 
+#+end_src
+- Which obviously fails
+- I did reconsider my name after the failure (the original name was
+  fix_field_names, but that was needlessly vague)
+* Invert Field Names
+   #+begin_src R :tangle ppr/R/ppr.R
+     invert_field <- function(df, field) {
+       field  <- rlang::enquo(field)
+       ppr5 <- dplyr::mutate(df,
+                  is_full_market_price = ifelse(
+                          !!field == "No",
+                          "Yes",
+                          "No"
+                  )
+                  ) %>%
+         dplyr::select(-not_full_market_price)
+       return(ppr5)
+     }
+   #+end_src
+- This is a pretty crap function, but it's a better grounding for future development
+- Remember that once we have tests on everything, we can refactor much more fearlessly
+* Description of property field
+- When I wrote this code (for a data science bootcamp) I discovered
+  that this field is buggy and annoying
+- There's also a bunch of entries as Gaeilge, which is annoying for my purposes
+- I have about 30 lines of logic here, most of which won't be reusable right away. 
+- The easiest thing to do with it is just dump it all into a function
+  so we can test it
+* Property Description Function
+  #+begin_src R :tangle ppr/R/ppr.R :exports none
+    fix_property_description  <- function(df) {
+    ppr7 <- dplyr::mutate(ppr6, prop_description = ifelse(
+            grepl("cothrom", x = property_size_description),
+            "greater than or equal to 38 sq metres and less than 125 sq metres",
+            ifelse(
+                    grepl("cearnach", x = property_size_description),
+                    "less than 38 sq metres",
+                    property_size_description
+            )
+    ))
 
+    ppr8 <- dplyr::mutate(ppr7, prop_description = ifelse(
+            prop_description == "greater than 125 sq metres",
+            "ge_125_square_meters",
+            ifelse(
+                    prop_description ==
+                            "greater than or equal to 125 sq metres",
+                    "ge_125_square_meters",
+                    prop_description
+            )
+    ))
+
+    ppr9 <- dplyr::mutate(ppr8, property_size_description = ifelse(
+            prop_description == "less than 38 sq metres",
+            "lt_38_square_meters",
+            ifelse(
+                    prop_description ==
+                            "greater than or equal to 38 sq metres and less than 125 sq metres",
+                    "ge_38_lt_125_square_meters",
+                    prop_description
+            )
+    )) %>%
+            dplyr::select(-prop_description) # pointless now
+    ppr10 <- dplyr::mutate(ppr9,
+            property_size_description = as.character(fct_explicit_na(property_size_description))
+            )
+    return(ppr10)
+    }
+  #+end_src
+* Testing our Property Description Logic
+- Kinda painful
+- Let's punt on it and just ensure that the same data is output
+- This is something that's a really, really common occurence [fn:5]
+#+begin_src R :tangle ppr/tests/testthat/test_first.R
+  test_that('new property desc logic is the same as old',{
+            data(ppr)
+            ppr_input  <- normalise_names(ppr) %>%
+              mutate(price=fix_price(price)) %>%
+              mark_values_as_large(1e6) %>%
+              log_column(price) %>% 
+              invert_field(not_full_market_price)
+            ppr_old  <-
+              readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/ppr_data_cleaning_done.csv") %>%
+              mutate(property_size_description=as.character(property_size_description))
+            expect_equal(fix_property_description(ppr_input),
+                         ppr_old)})
+#+end_src
+
+* Data Splitting
+- At this point, we have created functions for each of our data
+  cleaning steps
+- The next section is handling test and train sets
+- If I was doing this today, the recipe package would probably be my
+  first port of call
+#+begin_src R
+library(caret)
+set.seed(34)
+ppr_train_indices <- with(
+        ppr10,
+        createDataPartition(log_price,
+                times = 1,
+                p = 0.7,
+                list = FALSE
+        )
+)
+ppr_train <- ppr10[ppr_train_indices, ]
+
+ppr_not_train <- ppr10[-ppr_train_indices, ]
+ppr_test_indices <- with(
+        ppr_not_train,
+        createDataPartition(log_price,
+                times = 1,
+                p = 0.5,
+                list = FALSE
+        )
+) 
+
+ppr_test <- ppr_not_train[ppr_test_indices, ]
+ppr_validation <- ppr_not_train[ppr_test_indices, ]
+write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
+rm(ppr_validation)
+#+end_src
 ** Top Six Refactorings
 
 *** Extract Function
@@ -464,6 +641,8 @@ ppr4 <- mutate(ppr3, log_price = log(price, base = 10))
 *** Split Phase
 
 * Footnotes
+
+[fn:5] especially with code you didn't write yourself 
 
 [fn:4] you *always* want at least some characterisation tests (i.e. output) 
 

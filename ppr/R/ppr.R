@@ -57,3 +57,61 @@ mark_values_as_large <- function(df, large) {
                                         "Big", "Not Big"))
   return(ppr3)
   }
+
+log_column <- function(df, col) {
+    col <- rlang::enquo(col)
+    res <- dplyr::mutate(df, log_price = log(!!col, base = 10))
+    return(res)
+    }
+
+invert_field <- function(df, field) {
+  field  <- rlang::enquo(field)
+  ppr5 <- dplyr::mutate(df,
+             is_full_market_price = ifelse(
+                     !!field == "No",
+                     "Yes",
+                     "No"
+             )
+             ) %>%
+    dplyr::select(-not_full_market_price)
+  return(ppr5)
+}
+
+fix_property_description  <- function(df) {
+ppr7 <- dplyr::mutate(ppr6, prop_description = ifelse(
+        grepl("cothrom", x = property_size_description),
+        "greater than or equal to 38 sq metres and less than 125 sq metres",
+        ifelse(
+                grepl("cearnach", x = property_size_description),
+                "less than 38 sq metres",
+                property_size_description
+        )
+))
+
+ppr8 <- dplyr::mutate(ppr7, prop_description = ifelse(
+        prop_description == "greater than 125 sq metres",
+        "ge_125_square_meters",
+        ifelse(
+                prop_description ==
+                        "greater than or equal to 125 sq metres",
+                "ge_125_square_meters",
+                prop_description
+        )
+))
+
+ppr9 <- dplyr::mutate(ppr8, property_size_description = ifelse(
+        prop_description == "less than 38 sq metres",
+        "lt_38_square_meters",
+        ifelse(
+                prop_description ==
+                        "greater than or equal to 38 sq metres and less than 125 sq metres",
+                "ge_38_lt_125_square_meters",
+                prop_description
+        )
+)) %>%
+        dplyr::select(-prop_description) # pointless now
+ppr10 <- dplyr::mutate(ppr9,
+        property_size_description = as.character(fct_explicit_na(property_size_description))
+        )
+return(ppr10)
+}
