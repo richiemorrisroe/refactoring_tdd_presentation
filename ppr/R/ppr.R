@@ -78,7 +78,7 @@ invert_field <- function(df, field) {
 }
 
 fix_property_description  <- function(df) {
-ppr7 <- dplyr::mutate(ppr6, prop_description = ifelse(
+remove_irish <- dplyr::mutate(df, prop_description = ifelse(
         grepl("cothrom", x = property_size_description),
         "greater than or equal to 38 sq metres and less than 125 sq metres",
         ifelse(
@@ -88,7 +88,7 @@ ppr7 <- dplyr::mutate(ppr6, prop_description = ifelse(
         )
 ))
 
-ppr8 <- dplyr::mutate(ppr7, prop_description = ifelse(
+shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
         prop_description == "greater than 125 sq metres",
         "ge_125_square_meters",
         ifelse(
@@ -99,7 +99,7 @@ ppr8 <- dplyr::mutate(ppr7, prop_description = ifelse(
         )
 ))
 
-ppr9 <- dplyr::mutate(ppr8, property_size_description = ifelse(
+shorten_less_than_greater_than <- dplyr::mutate(ppr8, property_size_description = ifelse(
         prop_description == "less than 38 sq metres",
         "lt_38_square_meters",
         ifelse(
@@ -110,10 +110,10 @@ ppr9 <- dplyr::mutate(ppr8, property_size_description = ifelse(
         )
 )) %>%
         dplyr::select(-prop_description) # pointless now
-ppr10 <- dplyr::mutate(ppr9,
+result <- dplyr::mutate(ppr9,
         property_size_description = as.character(fct_explicit_na(property_size_description))
         )
-return(ppr10)
+return(result)
 }
 
 split_data <- function(df) {
