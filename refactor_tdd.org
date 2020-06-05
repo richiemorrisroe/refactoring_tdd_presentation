@@ -567,17 +567,17 @@ head(post_codes_table, n = 12)
 - Kinda painful
 - Let's punt on it and just ensure that the same data is output
 - This is something that's a really, really common occurence [fn:5]
-#+begin_src R :tangle ppr/tests/testthat/test_first.R
+#+begin_src R :session :tangle ppr/tests/testthat/test_first.R
   test_that('new property desc logic is the same as old',{
             data(ppr)
             ppr_input  <- normalise_names(ppr) %>%
-              mutate(price=fix_price(price)) %>%
+              dplyr::mutate(price=fix_price(price)) %>%
               mark_values_as_large(1e6) %>%
               log_column(price) %>% 
               invert_field(not_full_market_price)
             ppr_old  <-
               readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/ppr_data_cleaning_done.csv") %>%
-              mutate(property_size_description=as.character(property_size_description))
+              dplyr::mutate(property_size_description=as.character(property_size_description))
             expect_equal(fix_property_description(ppr_input),
                          ppr_old)})
 #+end_src

@@ -47,13 +47,13 @@ test_that('we have is_full_market_price column', {
 test_that('new property desc logic is the same as old',{
           data(ppr)
           ppr_input  <- normalise_names(ppr) %>%
-            mutate(price=fix_price(price)) %>%
+            dplyr::mutate(price=fix_price(price)) %>%
             mark_values_as_large(1e6) %>%
             log_column(price) %>% 
             invert_field(not_full_market_price)
           ppr_old  <-
             readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/ppr_data_cleaning_done.csv") %>%
-            mutate(property_size_description=as.character(property_size_description))
+            dplyr::mutate(property_size_description=as.character(property_size_description))
           expect_equal(fix_property_description(ppr_input),
                        ppr_old)})
 
