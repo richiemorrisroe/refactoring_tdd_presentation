@@ -10,7 +10,7 @@ ppr_lmer <- lmer(price~property_size_description+county+(1|year), data=train_sam
 ppr_lmer2 <- lmer(price~property_size_description+(1|county)+(1|year), data=train_sample)
 ppr_lmer3 <- lmer(price~property_size_description+(county|year), data=train_sample)
 
-save_model <- function(x) saveRDS(x, paste(substitute(x), ".rds", sep=""))
+save_model <- function(x) saveRDS(x, paste(substitute(x) , ".rds", sep=""))
 
 smaller_sample <- sample_frac(prop_sample, size=.1)
 
