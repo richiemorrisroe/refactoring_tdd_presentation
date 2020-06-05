@@ -9,6 +9,7 @@
 #+PROPERTY: header-args:R :session *R*  :eval no-export :height 360 :width 360
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
+#+OPTIONS: ^:nil
 * Blurb :noexport:
 
 Title: Seeing the Light with Refactoring and Testing: A guide for the data professional
@@ -93,18 +94,19 @@ python has lots of examples but R has very few.
 - Catolog of refactorings that can (theoretically) be done without
   tests [fn:4]
 * Characterisation Tests
-
 #+begin_src R :session :eval no
   require(testthat)
-  output_old <- readr::read_csv('older_data_from_before_changes.csv',
-                                col_types=NULL) # you'll need this argument
-  test_that('output old = output new', all.equal(output_old, output_new))
+  output_old <- readr::read_csv(
+                         "older_data.csv",
+                         ## you'll need this argument
+                         col_types=NULL) 
+  test_that('output old = output new',
+            all.equal(output_old, output_new))
 #+end_src
 - capture how the system behaves right now, and make sure it doesn't change
 - This simple test can allow you to make a /lot/ of progress relatively quickly
 - this tests are useful to help build structure and get other tests in place
 - but they prevent you from improving the code in pretty much any way
-- scaffolding for future tests
 * Seams
 - This is one of the most interesting parts of WELC, which defines a
   seam as a place where you can alter what code runs without changing any code
@@ -113,6 +115,11 @@ python has lots of examples but R has very few.
 - This is also a very quick way of getting characterisation tests
 - The simplest example is mocking out a package/script file/module by changing
   the path
+* Pinch Points
+- Another concept from WELC
+- Refers to the point where you can test as much as possible of functionalities
+- Normally a dataframe of some description (input data, output data,
+  predictions etc) 
 * First Steps
 - Gather the source files you are interested in
 - Run them, make sure they work. 
@@ -135,6 +142,11 @@ python has lots of examples but R has very few.
      usethis::use_package("dplyr")
      usethis::use_package("rlang")
      usethis::use_package("readxl")
+     usethis::use_package("caret")
+     usethis::use_package("rgdal")
+     usethis::use_package("sp")
+     usethis::use_package("glmnet")
+     usethis::use_package("sf")
      usethis::use_data_raw()
    #+end_src
 
@@ -180,48 +192,14 @@ source("scripts/prep_modelling.R")
 - We can then look at what it produces and decide what to test
 - Biggest benefit here is not having to change anything
 * Assessing what we need
-   #+begin_src R :session :exports both
+   #+begin_src R :session :exports code
    ls()
    #+end_src
-
-   #+RESULTS:
-   | daily_data                 |
-   | fix_price                  |
-   | g                          |
-   | generate_bootstrap_results |
-   | l                          |
-   | no_postcode_county         |
-   | normalise_names            |
-   | obj                        |
-   | post_codes_table           |
-   | postcode_county            |
-   | ppr                        |
-   | ppr_bootstrap_indices      |
-   | ppr_not_train              |
-   | ppr_test                   |
-   | ppr_test_indices           |
-   | ppr_train                  |
-   | ppr_train_indices          |
-   | ppr_train2                 |
-   | ppr10                      |
-   | ppr2                       |
-   | ppr3                       |
-   | ppr4                       |
-   | ppr5                       |
-   | ppr6                       |
-   | ppr7                       |
-   | ppr8                       |
-   | ppr9                       |
-
 
 - We have a bunch of dataframes, some functions and a few intermediate results
 - However, the best *pinch point* is ppr_train and test, as they are
   downstream of all our feature engineering
-* Pinch Points
-- Another concept from WELC
-- Refers to the point where you can test as much as possible of functionalities
-- Here, it's ppr_test and train, as they are our output for the next
-  script
+
 * Add data to package
 #+begin_src R :tangle ppr/data-raw/DATASET.R
 ppr <- readxl::read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
@@ -319,13 +297,15 @@ generate_bootstrap_results <- function(df, ind) {
 - This wouldn't normally make a whole lot of sense
 - But I know that I am probably going to move to SQL storage with this
   project
-- So centralising the data loading does make sense.
+- So centralising the data loading does make sense [fn:6]
 * Test Names
-   #+begin_src R :tangle ppr/tests/testthat/test_first.R
-     finished_names <- as.character(c("date_of_sale_dd_mm_yyyy",
-                                      "address", "postal_code", "county",                   
-                                      "price", "not_full_market_price","vat_exclusive",
-                                      "description_of_property",  "property_size_description"))
+   #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
+     finished_names <-
+       c("date_of_sale_dd_mm_yyyy",
+         "address", "postal_code", "county",                   
+         "price", "not_full_market_price","vat_exclusive",
+         "description_of_property",  "property_size_description") %>%
+       as.character()
 
      test_that('normalise_names works',
                {expect_equal(finished_names, names(normalise_names(dat)))})
@@ -533,7 +513,7 @@ head(post_codes_table, n = 12)
                     "less than 38 sq metres",
                     property_size_description
             )
-    ))
+            ))
 
     shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
             prop_description == "greater than 125 sq metres",
@@ -546,19 +526,22 @@ head(post_codes_table, n = 12)
             )
     ))
 
-    shorten_less_than_greater_than <- dplyr::mutate(ppr8, property_size_description = ifelse(
-            prop_description == "less than 38 sq metres",
-            "lt_38_square_meters",
-            ifelse(
-                    prop_description ==
-                            "greater than or equal to 38 sq metres and less than 125 sq metres",
-                    "ge_38_lt_125_square_meters",
-                    prop_description
-            )
-    )) %>%
+    shorten_less_than_greater_than <-
+      dplyr::mutate(shorten_greater_than,
+                    property_size_description = ifelse(
+                      prop_description == "less than 38 sq metres",
+                      "lt_38_square_meters",
+                                                ifelse(
+                                                  prop_description ==
+                                                  "greater than or equal to 38 sq metres and less than 125 sq metres",
+                                                  "ge_38_lt_125_square_meters",
+                                                  prop_description
+                                                )
+                    )) %>%
             dplyr::select(-prop_description) # pointless now
-    result <- dplyr::mutate(ppr9,
-            property_size_description = as.character(fct_explicit_na(property_size_description))
+    result <- dplyr::mutate(shorten_less_than_greater_than,
+                            property_size_description = as.character(
+                              forcats::fct_explicit_na(property_size_description))
             )
     return(result)
     }
@@ -621,7 +604,7 @@ rm(ppr_validation)
   #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
     data(ppr)
     ppr_for_split  <- normalise_names(ppr) %>%
-      mutate(price=fix_price(price)) %>%
+      dplyr::mutate(price=fix_price(price)) %>%
       mark_values_as_large(1e6) %>%
       log_column(price) %>% 
       invert_field(not_full_market_price) %>%
@@ -721,6 +704,8 @@ rm(ppr_validation)
 *** Split Phase
 
 * Footnotes
+
+[fn:6] given my use-cases 
 
 [fn:5] especially with code you didn't write yourself 
 

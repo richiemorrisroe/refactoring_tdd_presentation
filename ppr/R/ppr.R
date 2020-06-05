@@ -86,7 +86,7 @@ remove_irish <- dplyr::mutate(df, prop_description = ifelse(
                 "less than 38 sq metres",
                 property_size_description
         )
-))
+        ))
 
 shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
         prop_description == "greater than 125 sq metres",
@@ -99,19 +99,22 @@ shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
         )
 ))
 
-shorten_less_than_greater_than <- dplyr::mutate(ppr8, property_size_description = ifelse(
-        prop_description == "less than 38 sq metres",
-        "lt_38_square_meters",
-        ifelse(
-                prop_description ==
-                        "greater than or equal to 38 sq metres and less than 125 sq metres",
-                "ge_38_lt_125_square_meters",
-                prop_description
-        )
-)) %>%
+shorten_less_than_greater_than <-
+  dplyr::mutate(shorten_greater_than,
+                property_size_description = ifelse(
+                  prop_description == "less than 38 sq metres",
+                  "lt_38_square_meters",
+                                            ifelse(
+                                              prop_description ==
+                                              "greater than or equal to 38 sq metres and less than 125 sq metres",
+                                              "ge_38_lt_125_square_meters",
+                                              prop_description
+                                            )
+                )) %>%
         dplyr::select(-prop_description) # pointless now
-result <- dplyr::mutate(ppr9,
-        property_size_description = as.character(fct_explicit_na(property_size_description))
+result <- dplyr::mutate(shorten_less_than_greater_than,
+                        property_size_description = as.character(
+                          forcats::fct_explicit_na(property_size_description))
         )
 return(result)
 }

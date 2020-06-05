@@ -5,10 +5,12 @@ test_that('load_data returns a tibble',
   {expect_equal(
             class(dat)[1], "tbl_df")})
 
-finished_names <- as.character(c("date_of_sale_dd_mm_yyyy",
-                                 "address", "postal_code", "county",                   
-                                 "price", "not_full_market_price","vat_exclusive",
-                                 "description_of_property",  "property_size_description"))
+finished_names <-
+  c("date_of_sale_dd_mm_yyyy",
+    "address", "postal_code", "county",                   
+    "price", "not_full_market_price","vat_exclusive",
+    "description_of_property",  "property_size_description") %>%
+  as.character()
 
 test_that('normalise_names works',
           {expect_equal(finished_names, names(normalise_names(dat)))})
@@ -59,7 +61,7 @@ test_that('new property desc logic is the same as old',{
 
 data(ppr)
 ppr_for_split  <- normalise_names(ppr) %>%
-  mutate(price=fix_price(price)) %>%
+  dplyr::mutate(price=fix_price(price)) %>%
   mark_values_as_large(1e6) %>%
   log_column(price) %>% 
   invert_field(not_full_market_price) %>%
