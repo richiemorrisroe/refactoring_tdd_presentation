@@ -56,3 +56,27 @@ test_that('new property desc logic is the same as old',{
             mutate(property_size_description=as.character(property_size_description))
           expect_equal(fix_property_description(ppr_input),
                        ppr_old)})
+
+data(ppr)
+ppr_for_split  <- normalise_names(ppr) %>%
+  mutate(price=fix_price(price)) %>%
+  mark_values_as_large(1e6) %>%
+  log_column(price) %>% 
+  invert_field(not_full_market_price) %>%
+  fix_property_description()
+test_that('split_data returns a list',
+          expect_is(split_data(ppr_for_split), 'list'))
+
+test_that('split data has test and train',
+          expect_equal(names(split_data(ppr_for_split)), c("train", "test")))
+
+test_that('split data returns a train tibble',
+          expect_is(split_data(ppr_for_split)$train[1], 'tbl_df'))
+
+test_that('split data returns a test tibble',
+          expect_is(split_data(ppr_for_split)$test[1], 'tbl_df'))
+
+test_that('split_data train has less rows than input',{
+          train  <- split_data(ppr_for_split)$train
+          expect_gt(nrow(ppr_for_split), nrow(train))}
+          )

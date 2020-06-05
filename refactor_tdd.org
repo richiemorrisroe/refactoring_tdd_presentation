@@ -616,6 +616,86 @@ ppr_validation <- ppr_not_train[ppr_test_indices, ]
 write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
 rm(ppr_validation)
 #+end_src
+
+* Data Splitting Test
+  #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
+    data(ppr)
+    ppr_for_split  <- normalise_names(ppr) %>%
+      mutate(price=fix_price(price)) %>%
+      mark_values_as_large(1e6) %>%
+      log_column(price) %>% 
+      invert_field(not_full_market_price) %>%
+      fix_property_description()
+    test_that('split_data returns a list',
+              expect_is(split_data(ppr_for_split), 'list'))
+  #+end_src
+- Start with a simple test, make them more specific as times goes on
+* Data Splitting Function
+
+#+begin_src R 
+  split_data <- function(df) {
+    return(list())
+    }
+#+end_src
+- Passes the test :)
+* Splitting Data
+- Dump all the code into a function
+- Passes the tests
+  #+begin_src R :session :tangle ppr/R/ppr.R
+    split_data <- function(df) {
+      set.seed(34)
+      ppr_train_indices <- with(
+        df,
+        createDataPartition(log_price,
+                            times = 1,
+                            p = 0.7,
+                            list = FALSE
+                            )
+      )
+      ppr_train <- df[ppr_train_indices, ]
+
+      ppr_not_train <- df[-ppr_train_indices, ]
+      ppr_test_indices <- with(
+        ppr_not_train,
+        createDataPartition(log_price,
+                            times = 1,
+                            p = 0.5,
+                            list = FALSE
+                            )
+      ) 
+
+      ppr_test <- ppr_not_train[ppr_test_indices, ]
+      ppr_validation <- ppr_not_train[-ppr_test_indices, ]
+      write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
+      rm(ppr_validation)
+      return(list(train=ppr_train, test=ppr_test))
+    }
+  #+end_src
+* Add More Tests
+  #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
+    test_that('split data has test and train',
+              expect_equal(names(split_data(ppr_for_split)), c("train", "test")))
+
+    test_that('split data returns a train tibble',
+              expect_is(split_data(ppr_for_split)$train[1], 'tbl_df'))
+
+    test_that('split data returns a test tibble',
+              expect_is(split_data(ppr_for_split)$test[1], 'tbl_df'))
+
+    test_that('split_data train has less rows than input',{
+              train  <- split_data(ppr_for_split)$train
+              expect_gt(nrow(ppr_for_split), nrow(train))}
+              )
+  #+end_src
+* Refactor :noexport:
+- We now have more tests, so we can actually refactor
+- The first (and most important) refactoring is to get a handle on
+  global variables
+- Because of R's lexical scope, these are often a source of latent
+  (and horrible) bugs
+** TODO come back to this later
+* 
+
 ** Top Six Refactorings
 
 *** Extract Function
