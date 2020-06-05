@@ -17,6 +17,11 @@ RoxygenNote: 7.1.0
 Imports: 
     dplyr,
     rlang,
-    readxl
+    readxl,
+    caret,
+    rgdal,
+    sp,
+    glmnet,
+    sf
 Depends: 
     R (>= 2.10)
