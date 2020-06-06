@@ -274,6 +274,14 @@ test_that(
 
 * Run the script again with the changes we've made
 - Commit your code before and after!
+- We actually needed to make the data changes /first/ as otherwise our
+  "old" data wouldn't match the new(er) data
+* Create a small script to run the integration tests
+- This talk is all about *automated* testing, so we'll write a script
+#+begin_src R :session :tangle ppr/inst/integration_test_prep_modelling.R
+  system("Rscript prep_modelling.R")
+  testthat::test_file("../tests/testthat/test_integration_prep_modelling.R")
+#+end_src
 
 * First Steps First
 - Move the functions we have to a file
