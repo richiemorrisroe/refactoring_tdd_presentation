@@ -212,6 +212,19 @@ usethis::use_data(ppr, overwrite = TRUE)
 - You /can/ use absolute paths and stuff, but it's pretty ugly
 - CRAN strongly suggests that data be less than 5Mb, so we take a 5%
   sample
+* Create pinch point
+- We need to run our script with the package data, so we can keep
+  everything consistent
+- We add all the scripts to inst/, which is where we'll put the test
+  data also
+#+begin_src R :session
+readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
+#+end_src
+- We put this at the end of our script
+- Then, we run it like so:
+#+begin_src sh
+Rscript ppr/inst/prep_modelling.R
+#+end_src
 * First Steps First
 - Move the functions we have to a file
 - Change our script to load the package we've just created
@@ -281,7 +294,7 @@ generate_bootstrap_results <- function(df, ind) {
     {expect_equal(
               class(dat)[1], "tbl_df")})
 #+end_src
-- The first thing we do is write a load\_data function
+- The first thing we do is write a load_data function
 - this allows us to later abstract how/where we load the data from
   without needing to change (as much code)
 - Note that this function doesn't exist yet
@@ -304,11 +317,14 @@ generate_bootstrap_results <- function(df, ind) {
        c("date_of_sale_dd_mm_yyyy",
          "address", "postal_code", "county",                   
          "price", "not_full_market_price","vat_exclusive",
-         "description_of_property",  "property_size_description") %>%
+         "description_of_property",  
+         "property_size_description") %>%
        as.character()
 
      test_that('normalise_names works',
-               {expect_equal(finished_names, names(normalise_names(dat)))})
+     {expect_equal(finished_names,
+                   names(normalise_names(dat)))
+     })
    #+end_src
 - We just grab the output of normalise_names, and test that
 - this is a shitty test; try to test the actual invariants on edge cases
@@ -335,9 +351,10 @@ generate_bootstrap_results <- function(df, ind) {
 - Can you spot it?
 * Test Case for Bug
    #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
-   
+
      test_that('fix price returns the correct price',
-               expect_equal(3000000.01, fix_price("3,000,000.01")))
+               expect_equal(3000000.01,
+                            fix_price("3,000,000.01")))
 
    #+end_src
 - We actually shouldn't strip the dots, as they are valid in numbers
@@ -629,27 +646,27 @@ rm(ppr_validation)
       set.seed(34)
       ppr_train_indices <- with(
         df,
-        createDataPartition(log_price,
+        caret::createDataPartition(log_price,
                             times = 1,
                             p = 0.7,
                             list = FALSE
                             )
-      )
+      ) %>% as.vector() #because tibble sucks
       ppr_train <- df[ppr_train_indices, ]
 
       ppr_not_train <- df[-ppr_train_indices, ]
       ppr_test_indices <- with(
         ppr_not_train,
-        createDataPartition(log_price,
+        caret::createDataPartition(log_price,
                             times = 1,
                             p = 0.5,
                             list = FALSE
                             )
-      ) 
+      ) %>% as.vector()
 
       ppr_test <- ppr_not_train[ppr_test_indices, ]
       ppr_validation <- ppr_not_train[-ppr_test_indices, ]
-      write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
+      readr::write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
       rm(ppr_validation)
       return(list(train=ppr_train, test=ppr_test))
     }

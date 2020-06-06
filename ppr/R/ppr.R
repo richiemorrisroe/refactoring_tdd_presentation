@@ -123,27 +123,27 @@ split_data <- function(df) {
   set.seed(34)
   ppr_train_indices <- with(
     df,
-    createDataPartition(log_price,
+    caret::createDataPartition(log_price,
                         times = 1,
                         p = 0.7,
                         list = FALSE
                         )
-  )
+  ) %>% as.vector() #because tibble sucks
   ppr_train <- df[ppr_train_indices, ]
 
   ppr_not_train <- df[-ppr_train_indices, ]
   ppr_test_indices <- with(
     ppr_not_train,
-    createDataPartition(log_price,
+    caret::createDataPartition(log_price,
                         times = 1,
                         p = 0.5,
                         list = FALSE
                         )
-  ) 
+  ) %>% as.vector()
 
   ppr_test <- ppr_not_train[ppr_test_indices, ]
   ppr_validation <- ppr_not_train[-ppr_test_indices, ]
-  write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
+  readr::write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
   rm(ppr_validation)
   return(list(train=ppr_train, test=ppr_test))
 }
