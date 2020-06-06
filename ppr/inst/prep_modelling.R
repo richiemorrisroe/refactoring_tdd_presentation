@@ -265,5 +265,5 @@ generate_bootstrap_results <- function(df, ind) {
 g <- generate_bootstrap_results(ppr_train2, ppr_bootstrap_indices)
 hist(sapply(g, mean)^10)
 
-readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
-## readr::write_csv(ppr_train2, path = "prep_modelling_output_refactor.csv")
+## readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
+readr::write_csv(ppr_train2, path = "prep_modelling_output_refactor.csv")
