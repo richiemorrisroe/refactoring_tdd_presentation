@@ -223,8 +223,58 @@ readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
 - We put this at the end of our script
 - Then, we run it like so:
 #+begin_src sh
-Rscript ppr/inst/prep_modelling.R
+cd ppr/inst/
+Rscript prep_modelling.R
 #+end_src
+- We then output the full file
+- However, because we took a 5% sample earlier, we need to change things
+* Handling the sample
+- We have the data in our package [fn:7]
+- We need to change our script to use the package data
+- We can either rename the script, or rely on version control 
+#+begin_src sh
+cp prep_modelling.R prep_modelling_refactor.R
+#+end_src
+- Then we rename our output file
+#+begin_src R :session
+  ## readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
+  readr::write_csv(ppr_train2, path = "prep_modelling_output_refactor.csv")
+#+end_src
+* Commented out code is bad, right?
+- In general commented out code is a massive anti-pattern
+- But right now, we are making minimal changes to ensure that we can
+  safely update our script
+* Import data from package
+  #+begin_src R :session
+    ## library(tidyverse)
+    ## library(readxl)
+    ## ppr <- read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
+    require(ppr)
+    data(ppr)
+    names(ppr)
+  #+end_src
+
+#+begin_src sh :results none
+  mkdir ppr/tests
+  mkdir ppr/tests/testthat/
+  touch ppr/tests/testthat/test_first.R
+  touch ppr/tests/testthat/test_integration_prep_modelling.R
+#+end_src
+
+* Integration Test
+  #+begin_src R :session :tangle ppr/tests/testthat/test_integration_prep_modelling.R
+  context("integration test prep_modelling")
+old <- readr::read_csv("../../inst/prep_modelling_output_old.csv")
+new <- readr::read_csv("../../inst/prep_modelling_output_refactor.csv")
+test_that(
+        "data.frame outputs are equal",
+        expect_equal(old, new)
+)
+  #+end_src
+
+* Run the script again with the changes we've made
+- Commit your code before and after!
+
 * First Steps First
 - Move the functions we have to a file
 - Change our script to load the package we've just created
@@ -721,6 +771,8 @@ rm(ppr_validation)
 *** Split Phase
 
 * Footnotes
+
+[fn:7] right now, it's the /only/ thing in the package  
 
 [fn:6] given my use-cases 
 
