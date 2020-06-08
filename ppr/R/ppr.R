@@ -1,3 +1,11 @@
+##' remove non ASCII characters from name vector of df
+##'
+##' replaces spaces with underscores
+##' @title normalise_names
+##' @param df an object inheriting from data.frame
+##' @return a data.frame with fixed names
+##' @author richie
+##' @export
 normalise_names <- function(df) {
         nms <- names(df)
         normed <- iconv( # covert from one encoding to another
@@ -24,7 +32,15 @@ fix_price <- function(x) {
                 )
         )
 }
-
+##' fit a simple model, bootstrap the results
+##'
+##' see above
+##' @title generate_bootstrap_results
+##' @param df a data.frame
+##' @param ind a set of indices representing which observations to retain
+##' @return a list of results
+##' @author richie
+##' @export
 generate_bootstrap_results <- function(df, ind) {
         # results list (always generate something to hold your results first)
         trainresults <- vector(mode = "list", length = 10)
@@ -49,6 +65,24 @@ load_data <- function(path) {
   ppr <- readxl::read_excel(path, sheet = "PPR-ALL")
   return(ppr)
   }
+
+##' fix_price
+##'
+##' remove commas from a vector. Normally used to handle numbers with commas
+##' @title fix_price
+##' @param x a vector 
+##' @return a numeric vector
+##' @author richie
+##' @export
+fix_price <- function(x) {
+        nopunct <- gsub(",", "", x = x)
+        nums <- as.numeric(
+                iconv(nopunct, "latin1",
+                        "ASCII",
+                        sub = ""
+                )
+        )
+}
 
 mark_values_as_large <- function(df, large) {
   large <- rlang::enquo(large)

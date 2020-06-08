@@ -1,57 +1,10 @@
 library(tidyverse)
-## library(readxl)
-## ppr <- read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
 require(ppr)
+print(ls(pos = 2))
 data(ppr)
 names(ppr)
-normalise_names <- function(df) {
-        nms <- names(df)
-        normed <- iconv( # covert from one encoding to another
-                tolower(
-                        gsub("([[:space:]]|[[:punct:]])+", "_",
-                                x = nms
-                        )
-                ),
-                "latin1", # from encoding
-                "ASCII", # to encoding
-                sub = ""
-        )
-        drop_usc <- gsub("([a-z_])_*$",
-                         "\\1", x = normed) # drop extra underscores
-        names(df) <- drop_usc # update names
-        df # return dataframe
-}
-fix_price <- function(x) {
-        nopunct <- gsub(",", "", x = x)
-        nums <- as.numeric(
-                iconv(nopunct, "latin1",
-                        "ASCII",
-                        sub = ""
-                )
-        )
-}
 
-generate_bootstrap_results <- function(df, ind) {
-        # results list (always generate something to hold your results first)
-        trainresults <- vector(mode = "list", length = 10)
-        for (i in 1:length(ind)) {
-                nm <- names(ind[i])
-                train <- df[ind[[i]], ]
-                test <- df[-ind[[i]], ]
-                model <- lm(log_price ~ property_size_description + year,
-                        data = train
-                )
-                preds <- predict(model,
-                        newdata = test, type = "response",
-                        na.action = na.exclude
-                )
-                trainresults[[i]] <- preds
-        }
-        names(trainresults) <- names(ind)
-        trainresults
-}
-
-ppr2 <- normalise_names(ppr)
+ppr2 <- ppr::normalise_names(ppr)
 
 with(ppr2, mean(price))
 
@@ -243,25 +196,6 @@ ppr_train2 <- rename(ppr_train, date_of_sale = date_of_sale_dd_mm_yyyy) %>%
         )
 ppr_bootstrap_indices <- with(ppr_train, createResample(log_price, times = 100))
 
-generate_bootstrap_results <- function(df, ind) {
-        # results list (always generate something to hold your results first)
-        trainresults <- vector(mode = "list", length = 10)
-        for (i in 1:length(ind)) {
-                nm <- names(ind[i])
-                train <- df[ind[[i]], ]
-                test <- df[-ind[[i]], ]
-                model <- lm(log_price ~ property_size_description + year,
-                        data = train
-                )
-                preds <- predict(model,
-                        newdata = test, type = "response",
-                        na.action = na.exclude
-                )
-                trainresults[[i]] <- preds
-        }
-        names(trainresults) <- names(ind)
-        trainresults
-}
 g <- generate_bootstrap_results(ppr_train2, ppr_bootstrap_indices)
 hist(sapply(g, mean)^10)
 

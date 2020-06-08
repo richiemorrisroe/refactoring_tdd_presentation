@@ -285,63 +285,75 @@ test_that(
 
 * First Steps First
 - Move the functions we have to a file
-- Change our script to load the package we've just created
-#+begin_src R :tangle ppr/R/ppr.R :exports none
-normalise_names <- function(df) {
-        nms <- names(df)
-        normed <- iconv( # covert from one encoding to another
-                tolower(
-                        gsub("([[:space:]]|[[:punct:]])+", "_",
-                                x = nms
-                        )
-                ),
-                "latin1", # from encoding
-                "ASCII", # to encoding
-                sub = ""
-        )
-        drop_usc <- gsub("([a-z_])_*$",
-                         "\\1", x = normed) # drop extra underscores
-        names(df) <- drop_usc # update names
-        df # return dataframe
-}
-fix_price <- function(x) {
-        nopunct <- gsub(",", "", x = x)
-        nums <- as.numeric(
-                iconv(nopunct, "latin1",
-                        "ASCII",
-                        sub = ""
-                )
-        )
-}
-
-generate_bootstrap_results <- function(df, ind) {
-        # results list (always generate something to hold your results first)
-        trainresults <- vector(mode = "list", length = 10)
-        for (i in 1:length(ind)) {
-                nm <- names(ind[i])
-                train <- df[ind[[i]], ]
-                test <- df[-ind[[i]], ]
-                model <- lm(log_price ~ property_size_description + year,
-                        data = train
-                )
-                preds <- predict(model,
-                        newdata = test, type = "response",
-                        na.action = na.exclude
-                )
-                trainresults[[i]] <- preds
-        }
-        names(trainresults) <- names(ind)
-        trainresults
-}
+- Change our script to load the functions from this file
+#+begin_src R :session :tangle ppr/R/ppr.R :exports none
+  ##' remove non ASCII characters from name vector of df
+  ##'
+  ##' replaces spaces with underscores
+  ##' @title normalise_names
+  ##' @param df an object inheriting from data.frame
+  ##' @return a data.frame with fixed names
+  ##' @author richie
+  ##' @export
+  normalise_names <- function(df) {
+          nms <- names(df)
+          normed <- iconv( # covert from one encoding to another
+                  tolower(
+                          gsub("([[:space:]]|[[:punct:]])+", "_",
+                                  x = nms
+                          )
+                  ),
+                  "latin1", # from encoding
+                  "ASCII", # to encoding
+                  sub = ""
+          )
+          drop_usc <- gsub("([a-z_])_*$",
+                           "\\1", x = normed) # drop extra underscores
+          names(df) <- drop_usc # update names
+          df # return dataframe
+  }
+  fix_price <- function(x) {
+          nopunct <- gsub(",", "", x = x)
+          nums <- as.numeric(
+                  iconv(nopunct, "latin1",
+                          "ASCII",
+                          sub = ""
+                  )
+          )
+  }
+  ##' fit a simple model, bootstrap the results
+  ##'
+  ##' see above
+  ##' @title generate_bootstrap_results
+  ##' @param df a data.frame
+  ##' @param ind a set of indices representing which observations to retain
+  ##' @return a list of results
+  ##' @author richie
+  ##' @export
+  generate_bootstrap_results <- function(df, ind) {
+          # results list (always generate something to hold your results first)
+          trainresults <- vector(mode = "list", length = 10)
+          for (i in 1:length(ind)) {
+                  nm <- names(ind[i])
+                  train <- df[ind[[i]], ]
+                  test <- df[-ind[[i]], ]
+                  model <- lm(log_price ~ property_size_description + year,
+                          data = train
+                  )
+                  preds <- predict(model,
+                          newdata = test, type = "response",
+                          na.action = na.exclude
+                  )
+                  trainresults[[i]] <- preds
+          }
+          names(trainresults) <- names(ind)
+          trainresults
+  }
 
 #+end_src
 - We now have a package with code in it
-- Next step is to add some tests
-#+begin_src sh :results none
-  mkdir ppr/tests
-  mkdir ppr/tests/testthat/
-  touch ppr/tests/testthat/test_first.R
-#+end_src
+- Now we run our integration test again
+- Next step is to add some unit tests
 * Write some tests
 
 #+begin_src R :tangle ppr/tests/testthat/test_first.R
@@ -419,7 +431,7 @@ generate_bootstrap_results <- function(df, ind) {
 - We have a failing test, so we can fix this code (and make sure it
   stays fixed, which is normally more valuable)
 * Fix Price Fix
-   #+begin_src R :exports code
+   #+begin_src R :exports code :tangle ppr/R/ppr.R
      ##' fix_price
      ##'
      ##' remove commas from a vector. Normally used to handle numbers with commas
@@ -427,6 +439,7 @@ generate_bootstrap_results <- function(df, ind) {
      ##' @param x a vector 
      ##' @return a numeric vector
      ##' @author richie
+     ##' @export
      fix_price <- function(x) {
              nopunct <- gsub(",", "", x = x)
              nums <- as.numeric(
