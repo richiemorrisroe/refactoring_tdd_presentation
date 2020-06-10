@@ -181,3 +181,41 @@ split_data <- function(df) {
   rm(ppr_validation)
   return(list(train=ppr_train, test=ppr_test))
 }
+
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title 
+##' @param df 
+##' @return 
+##' @author richie
+##' @export
+count_distinct_values <- function(df) {
+  result  <- sapply(df, dplyr::n_distinct) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column() %>%
+    dplyr::rename(distincts=`.`) %>%
+    dplyr::arrange(desc(distincts))
+  return(result)
+  }
+
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title 
+##' @param df 
+##' @return 
+##' @author richie
+##' @export
+get_max_and_min <- function(df) {
+  maxmin  <- dplyr::select_if(as.data.frame(df),
+                                       is.numeric) %>%
+    sapply(., function(x) {
+      data.frame(
+        min = min(x, na.rm = TRUE),
+        max = max(x, na.rm = TRUE)
+      )
+    }) %>%
+    as.data.frame()
+  return(maxmin)
+}

@@ -788,18 +788,140 @@ rm(ppr_validation)
 - First thing we do is add a write_csv call to the end of our original
   function
 #+begin_src R :session
-readr::write_csv(test_vtreat_full, path="feature_eng_results_original.csv")
+readr::write_csv(test_vtreat_full, path="feature_eng_results_old.csv")
 #+end_src
 * Feature Engineering Integration Test
   #+begin_src R :session :tangle ppr/tests/testthat/int_test_feat_eng.R
       context("integration test feature engineering")
-    old <- readr::read_csv("../../inst/prep_modelling_output_old.csv")
-    new <- readr::read_csv("../../inst/prep_modelling_output_refactor.csv")
+    old <- readr::read_csv("../../inst/feat_eng_results_old.csv")
+    new <- readr::read_csv("../../inst/feat_eng_results.csv")
     test_that(
             "data.frame outputs are equal",
             expect_equal(old, new)
     )
   #+end_src
+* Different Approach to Refactoring
+- Instead of abstracting out units of work, abstract out common tasks
+#+begin_src R :session
+sapply(ppr_pobal, n_distinct) %>%
+        as.data.frame() %>%
+        rownames_to_column() %>%
+        arrange(desc(`.`))
+#+end_src
+- This code is unique
+- But the pattern is common
+#+begin_src R :session :tangle ppr/R/ppr.R
+  ##' .. content for \description{} (no empty lines) ..
+  ##'
+  ##' .. content for \details{} ..
+  ##' @title 
+  ##' @param df 
+  ##' @return 
+  ##' @author richie
+  ##' @export
+  count_distinct_values <- function(df) {
+    result  <- sapply(df, dplyr::n_distinct) %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column() %>%
+      dplyr::rename(distincts=`.`) %>%
+      dplyr::arrange(desc(distincts))
+    return(result)
+    }
+#+end_src
+- This is a lot more useful than the original
+- It's also a lot more amenable to testing
+- As always, we start with a characterisation test
+* More Extractions
+  #+begin_src R :session
+  get_max_and_min  <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
+        sapply(., function(x) {
+                      data.frame(
+                              min = min(x, na.rm = TRUE),
+                              max = max(x, na.rm = TRUE)
+                      )
+              }) %>%
+        as.data.frame()
+  #+end_src
+* Becomes
+  #+begin_src R :session :tangle ppr/R/ppr.R
+    ##' .. content for \description{} (no empty lines) ..
+    ##'
+    ##' .. content for \details{} ..
+    ##' @title 
+    ##' @param df 
+    ##' @return 
+    ##' @author richie
+    ##' @export
+    get_max_and_min <- function(df) {
+      maxmin  <- dplyr::select_if(as.data.frame(df),
+                                           is.numeric) %>%
+        sapply(., function(x) {
+          data.frame(
+            min = min(x, na.rm = TRUE),
+            max = max(x, na.rm = TRUE)
+          )
+        }) %>%
+        as.data.frame()
+      return(maxmin)
+    }
+  #+end_src
+* Value Counts
+- This is /literally/ the only thing pandas does better than R
+- I write code like the below far too often for my taste
+#+begin_src R :session :results none
+  post_codes_table <-
+          with(ppr4, table(postal_code, useNA = "always")) %>%
+          as.data.frame() %>%
+          arrange(desc(Freq))
+#+end_src
+* Which can be functionalised like so
+  #+begin_src R :session :results none
+    ##' count distinct values in col of data.frame
+    ##'
+    ##' returns an data.frame ordered by counts
+    ##' @title value_counts
+    ##' @param df a data.frame
+    ##' @param col a character or factor column
+    ##' @return a data.frame ordered by count of values in col
+    ##' @author richie
+    ##' @export
+    value_counts <- function(df, col) {
+      result <-
+        table(eval(substitute(col), envir=df),
+              useNA = "always") %>% 
+        as.data.frame() %>%
+        arrange(desc(Freq))
+
+    }
+  #+end_src
+* Proportion of Missings
+- Again, I have written code like this many, many times
+#+begin_src R :session :tangle ppr/R/ppr.R
+  ##' count proportion of NA's in each col of data.frame
+  ##'
+  ##' see above
+  ##' @title count_proportion_missing
+  ##' @param df a data.frame
+  ##' @return a data.frame with the proportion missing in each variable
+  ##' @author richie
+  ##' @export
+  count_proportion_missing <- function(df) {
+    result <- sapply(df, function(x) {
+                sum(is.na(x)) / length(x)
+        }) %>%
+          as.data.frame() %>%
+          tibble::rownames_to_column() %>%
+          dplyr::arrange(desc(`.`)) %>%
+      dplyr::mutate_if(is.numeric, round, 4)
+    return(result)
+    }
+#+end_src
+
+* I don't actually need these functions to run the script
+- But I can add the data from the originals as test data to get
+  started
+
+
 ** Top Six Refactorings
 
 *** Extract Function
