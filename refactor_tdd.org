@@ -150,6 +150,7 @@ python has lots of examples but R has very few.
      usethis::use_package("sp")
      usethis::use_package("glmnet")
      usethis::use_package("sf")
+     usethis::use_package("vtreat")
      usethis::use_data_raw()
    #+end_src
 
@@ -782,7 +783,13 @@ rm(ppr_validation)
 - Because of R's lexical scope, these are often a source of latent
   (and horrible) bugs
 ** TODO come back to this later
-* 
+* Feature Engineering
+- We now move on to the next script
+- First thing we do is add a write_csv call to the end of our original
+  function
+#+begin_src R :session
+readr::write_csv(test_vtreat_full, path="feature_eng_results.csv")
+#+end_src
 
 ** Top Six Refactorings
 
