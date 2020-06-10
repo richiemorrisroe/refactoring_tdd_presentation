@@ -1,5 +1,6 @@
+require(tidyverse)
 ppr_train <- readr::read_csv("prep_modelling_output_refactor.csv")
-with(ppr_train, BoxCoxTrans(price))
+with(ppr_train, caret::BoxCoxTrans(price))
 
 ppr_train3 <- select(
         ppr_train, -postal_code,
@@ -10,7 +11,7 @@ ppr_train_s <- sample_frac(ppr_train3, size = 0.1)
 ppr_test_samp <- sample_frac(ppr_train3,
         size = 0.05
 )
-train_ctrl <- trainControl(
+train_ctrl <- caret::trainControl(
         method = "repeatedcv",
         repeats = 5
 )
@@ -30,7 +31,7 @@ ppr_train_s2 <- filter(
         log_price <= log(1e6, base = 10)
 ) %>%
         select(-is_big)
-ppr_glmnet2 <- train(log_price ~ .,
+ppr_glmnet2 <- caret::train(log_price ~ .,
         data = ppr_train_s2,
         method = "glmnet",
         trControl = train_ctrl
@@ -68,12 +69,15 @@ locs <- select(ppr_gc2, longitude, latitude)
 sp_ppr <- SpatialPointsDataFrame(locs, data = ppr_gc2, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 ppr_gc_sf <- st_as_sf(sp_ppr)
 
-sapply(ppr_pobal, n_distinct) %>%
+count_distincts  <- sapply(ppr_pobal, n_distinct) %>%
         as.data.frame() %>%
         rownames_to_column() %>%
         arrange(desc(`.`))
 
-select_if(as.data.frame(ppr_pobal), is.numeric) %>%
+
+readr::write_csv(count_distincts, path = "count_distincts_test_data.csv")
+
+get_max_and_min  <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
         sapply(., function(x) {
                       data.frame(
                               min = min(x, na.rm = TRUE),
@@ -82,14 +86,19 @@ select_if(as.data.frame(ppr_pobal), is.numeric) %>%
               }) %>%
         as.data.frame()
 
-sapply(ppr_pobal, function(x) {
-              sum(is.na(x)) / length(x)
-      }) %>%
-        as.data.frame() %>%
-        rownames_to_column() %>%
+readr::write_csv(get_max_and_min, path = "get_max_and_min_test_data.csv")
+
+count_missings  <- sapply(ppr_pobal, function(x) {
+    sum(is.na(x)) / length(x)
+}) %>%
+    as.data.frame() %>%
+    rownames_to_column() %>%
         dplyr::arrange(desc(`.`)) %>%
-        mutate_if(is.numeric, round, 4) %>%
-        head(n = 5)
+    mutate_if(is.numeric, round, 4) %>%
+    head(n = 5)
+
+readr::write_csv(count_missings, path = "count_prop_missings_test_data.csv")
+
 
 num_vars <- as.data.frame(ppr_pobal) %>%
         na.omit() %>%
