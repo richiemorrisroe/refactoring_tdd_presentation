@@ -148,7 +148,8 @@ ppr9 <- mutate(ppr8, property_size_description = ifelse(
         select(-prop_description) # pointless now
 ppr10 <- mutate(ppr9,
         property_size_description = fct_explicit_na(property_size_description)
-)
+        )
+readr::write_csv(ppr10, path = "ppr_data_cleaning_done.csv")
 
 library(caret)
 # set.seed ensures that future samples are consistent so this is a bad

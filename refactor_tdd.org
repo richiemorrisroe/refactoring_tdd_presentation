@@ -10,6 +10,8 @@
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+OPTIONS: ^:nil
+#+TITLE: Seeing the Light with Refactoring and Testing
+#+AUTHOR: Richie Morrisroe
 * Blurb :noexport:
 
 Title: Seeing the Light with Refactoring and Testing: A guide for the data professional
@@ -32,7 +34,7 @@ many years, and has recently found a religion that helps him to make
 sense of all the complexity of modern data and software. Join him on a
 journey to happiness and enlightment.
 
-* Refactorings in R
+* Refactorings in R :noexport:
 
 Shamelessly stolen from the [[https://martinfowler.com/articles/refactoring-2nd-ed.html][book]].
 
@@ -77,8 +79,9 @@ python has lots of examples but R has very few.
 - Otherwise you [fn:1] *will* introduce bugs
 * Types of Testing
 - Individual functions: unit testing
+- Processes working together: integration testing
 - Overall application: functional testing
-- Lots of space between these two points
+- Lots of space between these points
 
 * My Code is so awful that it can't be tested
 - This is depressingly normal
@@ -237,8 +240,10 @@ cp prep_modelling.R prep_modelling_refactor.R
 #+end_src
 - Then we rename our output file
 #+begin_src R :session
-  ## readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
-  readr::write_csv(ppr_train2, path = "prep_modelling_output_refactor.csv")
+  ## readr::write_csv(ppr_train2,
+  ## path = "prep_modelling_output_old.csv") 
+  readr::write_csv(ppr_train2,
+                   path = "prep_modelling_output_refactor.csv")
 #+end_src
 * Commented out code is bad, right?
 - In general commented out code is a massive anti-pattern
@@ -248,7 +253,8 @@ cp prep_modelling.R prep_modelling_refactor.R
   #+begin_src R :session
     ## library(tidyverse)
     ## library(readxl)
-    ## ppr <- read_excel("~/Dropbox/PPR/PPR-ALL.xlsx", sheet = "PPR-ALL")
+    ## ppr <- read_excel("~/Dropbox/PPR/PPR-ALL.xlsx",
+    ##                   sheet = "PPR-ALL")
     require(ppr)
     data(ppr)
     names(ppr)
@@ -280,7 +286,8 @@ test_that(
 - This talk is all about *automated* testing, so we'll write a script
 #+begin_src R :session :tangle ppr/inst/integration_test_prep_modelling.R
   system("Rscript prep_modelling.R")
-  testthat::test_file("../tests/testthat/test_integration_prep_modelling.R")
+  testthat::test_file(
+              "../tests/testthat/test_integration_prep_modelling.R")
 #+end_src
 
 * First Steps First
@@ -638,19 +645,29 @@ head(post_codes_table, n = 12)
 - Kinda painful
 - Let's punt on it and just ensure that the same data is output
 - This is something that's a really, really common occurence [fn:5]
+* Creating base data
+
+Alter our prep_modelling script like so:
+#+begin_src R :session
+readr::write_csv(ppr10, path = "ppr_data_cleaning_done.csv")
+#+end_src
+- This will write the file into our package
+- We can then add it as test data, like we did with the base data
+* Test for Property Description
+
 #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
-  test_that('new property desc logic is the same as old',{
-            data(ppr)
-            ppr_input  <- normalise_names(ppr) %>%
-              dplyr::mutate(price=fix_price(price)) %>%
-              mark_values_as_large(1e6) %>%
-              log_column(price) %>% 
-              invert_field(not_full_market_price)
-            ppr_old  <-
-              readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/ppr_data_cleaning_done.csv") %>%
-              dplyr::mutate(property_size_description=as.character(property_size_description))
-            expect_equal(fix_property_description(ppr_input),
-                         ppr_old)})
+  ## test_that('new property desc logic is the same as old',{
+  ##           data(ppr)
+  ##           ppr_input  <- normalise_names(ppr) %>%
+  ##             dplyr::mutate(price=fix_price(price)) %>%
+  ##             mark_values_as_large(1e6) %>%
+  ##             log_column(price) %>% 
+  ##             invert_field(not_full_market_price)
+  ##           ppr_old  <-
+  ##             readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/inst/ppr_data_cleaning_done.csv") %>%
+  ##             dplyr::mutate(property_size_description=as.character(property_size_description))
+  ##           expect_equal(fix_property_description(ppr_input),
+  ##                        ppr_old)})
 #+end_src
 
 * Data Splitting
