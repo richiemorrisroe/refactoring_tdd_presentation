@@ -788,9 +788,18 @@ rm(ppr_validation)
 - First thing we do is add a write_csv call to the end of our original
   function
 #+begin_src R :session
-readr::write_csv(test_vtreat_full, path="feature_eng_results.csv")
+readr::write_csv(test_vtreat_full, path="feature_eng_results_original.csv")
 #+end_src
-
+* Feature Engineering Integration Test
+  #+begin_src R :session :tangle ppr/tests/testthat/int_test_feat_eng.R
+      context("integration test feature engineering")
+    old <- readr::read_csv("../../inst/prep_modelling_output_old.csv")
+    new <- readr::read_csv("../../inst/prep_modelling_output_refactor.csv")
+    test_that(
+            "data.frame outputs are equal",
+            expect_equal(old, new)
+    )
+  #+end_src
 ** Top Six Refactorings
 
 *** Extract Function
