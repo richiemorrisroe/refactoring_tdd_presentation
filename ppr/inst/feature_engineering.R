@@ -1,4 +1,5 @@
 require(tidyverse)
+require(ppr)
 ppr_train <- readr::read_csv("prep_modelling_output_refactor.csv")
 with(ppr_train, caret::BoxCoxTrans(price))
 
@@ -41,14 +42,8 @@ preds2 <- predict(ppr_glmnet2,
 )
 ppr_test_samp$glmnet_preds2 <- preds2
 
-## ppr_gc1 <- filter(ppr_gc, year <= 2016)
-## ppr_gc2 <- filter(ppr_gc, year > 2016)
-## # github doesn't like large files
-## write_csv(ppr_gc1, path = "ppr_gecoded1.csv")
-## write_csv(ppr_gc2, path = "ppr_gecoded2.csv")
-ppr_gc <- read_csv(
-        "~/Dropbox/PPR/ppr_geocoded_till_oct2018.csv"
-)
+
+data(ppr_gc)
 names(ppr_gc)[12:24]
 
 library(sp)
@@ -57,13 +52,14 @@ shp <- readOGR("~/Dropbox/PPR/electoral_divisions_gps.shp")
 # df stored in this slot
 names(shp@data[, 13:length(shp@data)])
 
-pobal <- read_csv("~/Dropbox/PPR/pobal_deprivation_index_ed.csv")
-names(pobal)[25:45]
+## pobal <- read_csv("~/Dropbox/PPR/pobal_deprivation_index_ed.csv")
+## names(pobal)[25:45]
 
 
 library(sp)
 library(sf) # spatial simple features library
-ppr_pobal <- readRDS("~/Dropbox/Code/DDS/ppr_sf_pobal2.rds")
+data(ppr_pobal)
+## ppr_pobal <- readRDS("~/Dropbox/Code/DDS/ppr_sf_pobal2.rds")
 
 ppr_gc2 <- filter(ppr_gc, !is.na(latitude), !is.na(electoral_district))
 locs <- select(ppr_gc2, longitude, latitude)

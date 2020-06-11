@@ -833,10 +833,10 @@ rm(ppr_validation)
                    path="feature_eng_results_old.csv")
 #+end_src
 * Feature Engineering Integration Test
-  #+begin_src R :session :tangle ppr/tests/testthat/int_test_feat_eng.R
+  #+begin_src R :session :tangle ppr/tests/testthat/test_int_feat_eng.R
       context("integration test feature engineering")
-    old <- readr::read_csv("../../inst/feat_eng_results_old.csv")
-    new <- readr::read_csv("../../inst/feat_eng_results.csv")
+    old <- readr::read_csv("../../inst/feature_eng_results_old.csv")
+    new <- readr::read_csv("../../inst/feature_eng_results.csv")
     test_that(
             "data.frame outputs are equal",
             expect_equal(old, new)
