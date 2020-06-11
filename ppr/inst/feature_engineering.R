@@ -153,7 +153,7 @@ treat <- designTreatmentsN(ppr_train_s2,
 train_prep <- prepare(treat,
         dframe = ppr_pobal_s
 )
-
+set.seed(23)
 ppr_pobal_test <- sample_frac(ppr_pobal, size = 0.1)
 test_vtreat <- prepare(treat, ppr_pobal_test)
 ## glmnet_preds <- predict(glmnet_ed1,
