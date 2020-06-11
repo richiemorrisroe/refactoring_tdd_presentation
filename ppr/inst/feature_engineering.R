@@ -60,13 +60,16 @@ names(shp@data[, 13:length(shp@data)])
 pobal <- read_csv("~/Dropbox/PPR/pobal_deprivation_index_ed.csv")
 names(pobal)[25:45]
 
-library(sf) # spatial simple features library
+
 library(sp)
+library(sf) # spatial simple features library
 ppr_pobal <- readRDS("~/Dropbox/Code/DDS/ppr_sf_pobal2.rds")
 
 ppr_gc2 <- filter(ppr_gc, !is.na(latitude), !is.na(electoral_district))
 locs <- select(ppr_gc2, longitude, latitude)
-sp_ppr <- SpatialPointsDataFrame(locs, data = ppr_gc2, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+sp_ppr <- SpatialPointsDataFrame(locs, data = ppr_gc2,
+                                 proj4string =
+                                     CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 ppr_gc_sf <- st_as_sf(sp_ppr)
 
 count_distincts  <- sapply(ppr_pobal, n_distinct) %>%
@@ -77,20 +80,20 @@ count_distincts  <- sapply(ppr_pobal, n_distinct) %>%
 
 readr::write_csv(count_distincts, path = "count_distincts_test_data.csv")
 
-get_max_and_min  <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
+max_min2 <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
         sapply(., function(x) {
-                      data.frame(
-                              min = min(x, na.rm = TRUE),
-                              max = max(x, na.rm = TRUE)
-                      )
-              }) %>%
-        as.data.frame()
+                data.frame(
+                        min = min(x, na.rm = TRUE),
+                        max = max(x, na.rm = TRUE)
+                )
+        }) %>%
+        as_tibble() %>%
+        rownames_to_column()
+max_min_df <- unnest(max_min2, cols = colnames(max_min2))
 
-readr::write_csv(get_max_and_min, path = "get_max_and_min_test_data.csv")
-
+readr::write_csv(max_min_df, path = "get_max_and_min_test_data.csv")
 count_missings  <- sapply(ppr_pobal, function(x) {
-    sum(is.na(x)) / length(x)
-}) %>%
+    sum(is.na(x)) / length(x)}) %>%
     as.data.frame() %>%
     rownames_to_column() %>%
         dplyr::arrange(desc(`.`)) %>%
@@ -98,7 +101,7 @@ count_missings  <- sapply(ppr_pobal, function(x) {
     head(n = 5)
 
 readr::write_csv(count_missings, path = "count_prop_missings_test_data.csv")
-
+message("got here 2")
 
 num_vars <- as.data.frame(ppr_pobal) %>%
         na.omit() %>%

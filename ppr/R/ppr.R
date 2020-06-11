@@ -87,14 +87,18 @@ fix_price <- function(x) {
 mark_values_as_large <- function(df, large) {
   large <- rlang::enquo(large)
   ppr3 <- dplyr::mutate(df,
-                        is_big = ifelse(.data$price >= !!large,
-                                        "Big", "Not Big"))
+                        is_big =
+                          ifelse(
+                            .data$price >= !!large,
+                            "Big", "Not Big"))
   return(ppr3)
   }
 
 log_column <- function(df, col) {
     col <- rlang::enquo(col)
-    res <- dplyr::mutate(df, log_price = log(!!col, base = 10))
+    res <- dplyr::mutate(df,
+                         log_price =
+                           log(!!col, base = 10))
     return(res)
     }
 
@@ -182,12 +186,12 @@ split_data <- function(df) {
   return(list(train=ppr_train, test=ppr_test))
 }
 
-##' .. content for \description{} (no empty lines) ..
+##' count unique values in all columns of a dataframe
 ##'
-##' .. content for \details{} ..
-##' @title 
-##' @param df 
-##' @return 
+##' return an ordered data.frame
+##' @title count_distinct_values
+##' @param df data.frame
+##' @return a data.frame
 ##' @author richie
 ##' @export
 count_distinct_values <- function(df) {
@@ -198,24 +202,74 @@ count_distinct_values <- function(df) {
     dplyr::arrange(desc(distincts))
   return(result)
   }
-
-##' .. content for \description{} (no empty lines) ..
+##' count proportion of NA's in each col of data.frame
 ##'
-##' .. content for \details{} ..
-##' @title 
-##' @param df 
-##' @return 
+##' see above
+##' @title count_proportion_missing
+##' @param df a data.frame
+##' @return a data.frame with the proportion missing in each variable
 ##' @author richie
 ##' @export
-get_max_and_min <- function(df) {
-  maxmin  <- dplyr::select_if(as.data.frame(df),
-                                       is.numeric) %>%
-    sapply(., function(x) {
-      data.frame(
-        min = min(x, na.rm = TRUE),
-        max = max(x, na.rm = TRUE)
-      )
-    }) %>%
-    as.data.frame()
-  return(maxmin)
-}
+count_proportion_missing <- function(df) {
+  result <- sapply(df, function(x) {
+              sum(is.na(x)) / length(x)
+      }) %>%
+        as.data.frame() %>%
+        tibble::rownames_to_column() %>%
+        dplyr::arrange(desc(`.`)) %>%
+    dplyr::mutate_if(is.numeric, round, 4)
+  return(result)
+  }
+#+begin_src R :session :tangle ppr/R/ppr.R
+  ##' get maximum & minimum of all numeric columns in a data.frame
+  ##'
+  ##' see above
+  ##' @title get_max_and_min
+  ##' @param df 
+  ##' @return a data.frame with col, max and min columns
+  ##' @author richie
+  ##' @export
+        get_max_and_min <- function(df) {
+          maxmin  <- dplyr::select_if(as.data.frame(df),
+                                               is.numeric) %>%
+            sapply(., function(x) {
+              data.frame(
+                min = min(x, na.rm = TRUE),
+                max = max(x, na.rm = TRUE)
+              )
+            }) %>%
+            tibble::as_tibble() %>%
+            tibble::rownames_to_column()
+
+          max_min_df  <- tidyr::unnest(max_min, cols=colnames(max_min2))
+          return(max_min_df) }
+  ##' count distinct values in col of data.frame
+  ##'
+  ##' returns an data.frame ordered by counts
+  ##' @title value_counts
+  ##' @param df a data.frame
+  ##' @param col a character or factor column
+  ##' @return a data.frame ordered by count of values in col
+  ##' @author richie
+  ##' @export
+  value_counts <- function(df, col) {
+    result <-
+      table(eval(substitute(col), envir=df),
+            useNA = "always") %>% 
+      as.data.frame() %>%
+      arrange(desc(Freq))
+
+  }
+##' load test data
+##'
+##' see above
+##' @title load_test_data
+##' @param name 
+##' @return a data.frame with test data
+##' @author richie
+##' @export
+  load_test_data <- function(name) {
+    bpath  <- "../../inst/"
+    result <- readr::read_csv(paste0(bpath, name))
+    return(result)
+  }

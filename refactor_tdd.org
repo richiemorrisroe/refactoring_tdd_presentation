@@ -6,7 +6,7 @@
 #+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
 #+BIND: org-latex-image-default-width 0.7\linewidth
 #+BIND: org-latex-image-default-height 0.7\linewidth
-#+PROPERTY: header-args:R :session *R*  :eval no-export :height 360 :width 360
+#+PROPERTY: header-args:R :session  :eval no-export :height 360 :width 360
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+OPTIONS: ^:nil
@@ -152,6 +152,7 @@ python has lots of examples but R has very few.
      usethis::use_package("sf")
      usethis::use_package("vtreat")
      usethis::use_data_raw()
+     usethis::use_pipe()
    #+end_src
 
 - This creates an R package for us
@@ -466,18 +467,21 @@ test_that(
 * Break out components
 - You want to break out chunks of code into manageable (well-named) sizes
 - This is the extract function refactoring (probably the most common)
-#+begin_src R :exports code
-  ppr3 <- mutate(ppr2,
-                 price = price / 100,
-                 is_big = ifelse(price >= 2e6, "Big", "Not Big"))
+#+begin_src R :session :exports code
+    ppr3 <- mutate(ppr2,
+                   price = price / 100,
+                   is_big = ifelse(price >= 2e6, 
+                                   "Big",
+                                   "Not Big"))
 #+end_src
 
 * Write test for new function
   #+begin_src R :tangle ppr/tests/testthat/test_first.R
-    test_df_output  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data_done.csv")
-    test_df_input  <- readr::read_csv("~/Dropbox/Code/Rlang/refactoring_and_tdd/ppr/mark_values_as_large_test_data.csv")
+    test_df_output  <- readr::read_csv("../../inst/mark_values_as_large_test_data_done.csv")
+    test_df_input  <- readr::read_csv("../../inst/mark_values_as_large_test_data.csv")
     test_that('mark values as large works', {
-      expect_equal(mark_values_as_large(test_df_input, large = 1e6),
+      expect_equal(mark_values_as_large(test_df_input,
+                                        large = 1e6),
                    test_df_output)
     })
 
@@ -487,8 +491,10 @@ test_that(
   mark_values_as_large <- function(df, large) {
     large <- rlang::enquo(large)
     ppr3 <- dplyr::mutate(df,
-                          is_big = ifelse(.data$price >= !!large,
-                                          "Big", "Not Big"))
+                          is_big =
+                            ifelse(
+                              .data$price >= !!large,
+                              "Big", "Not Big"))
     return(ppr3)
     }
 #+end_src
@@ -502,19 +508,23 @@ test_that(
 - In general, if you have problems with a response or predictor
   variable, you should log it and see if that helps
 #+begin_src R :session
-ppr4 <- mutate(ppr3, log_price = log(price, base = 10))
+  ppr4 <- mutate(ppr3, log_price =
+                         log(price, base = 10))
 #+end_src
 - Does this need to be a function?
 * Log function tests 
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
-     test_that('log(price)< price',
-     {
-       data(ppr)
-       ppr2 <- normalise_names(ppr) %>% dplyr::mutate(price=fix_price(price))
-       new_df <-  log_column(ppr2, price)
-       expect_lt(new_df$log_price[1],
-                         ppr2$price[1])}
-               )
+          test_that('log(price)< price',
+          {
+            data(ppr)
+            ppr2 <- normalise_names(ppr) %>% 
+              dplyr::mutate(price=fix_price(price))
+       
+            new_df <-  log_column(ppr2, price)
+            # can't find a vector based expectation in testthat
+            expect_lt(new_df$log_price[1],
+                              ppr2$price[1])}
+                    )
    #+end_src
 - Obviously this fails again
 - One of the great things about TDD is that you end up needing to use
@@ -525,7 +535,9 @@ ppr4 <- mutate(ppr3, log_price = log(price, base = 10))
 #+begin_src R :tangle ppr/R/ppr.R
   log_column <- function(df, col) {
       col <- rlang::enquo(col)
-      res <- dplyr::mutate(df, log_price = log(!!col, base = 10))
+      res <- dplyr::mutate(df,
+                           log_price =
+                             log(!!col, base = 10))
       return(res)
       }
 #+end_src
@@ -561,14 +573,16 @@ head(post_codes_table, n = 12)
 * Rename Field Test
 - First, we write a test
 #+begin_src R :tangle ppr/tests/testthat/test_first.R
-  data(ppr)
-  test_that('we have is_full_market_price column', {
-            ppr3 <- normalise_names(ppr) %>%
-              dplyr::mutate(price=fix_price(price)) %>%
-              log_column(price)
-            ppr4 <- invert_field(ppr3, not_full_market_price)
-            expect_equal(names(ppr4)[length(ppr4)], "is_full_market_price") }
-            )
+    data(ppr)
+    test_that('we have is_full_market_price column', {
+              ppr3 <- normalise_names(ppr) %>%
+                dplyr::mutate(price=fix_price(price)) %>%
+                log_column(price)
+              ppr4 <- invert_field(ppr3, 
+                                   not_full_market_price)
+              expect_equal(names(ppr4)[length(ppr4)],
+                           "is_full_market_price") }
+              )
 
 #+end_src
 - Which obviously fails
@@ -589,7 +603,6 @@ head(post_codes_table, n = 12)
        return(ppr5)
      }
    #+end_src
-- This is a pretty crap function, but it's a better grounding for future development
 - Remember that once we have tests on everything, we can refactor much more fearlessly
 * Description of property field
 - When I wrote this code (for a data science bootcamp) I discovered
@@ -599,6 +612,29 @@ head(post_codes_table, n = 12)
 - The easiest thing to do with it is just dump it all into a function
   so we can test it
 * Property Description Function
+  #+begin_src R :exports code
+      fix_property_description  <- function(df) {
+    remove_irish <- dplyr::mutate(df, prop_description = ifelse(
+            grepl("cothrom", x = property_size_description),
+            "greater than or equal to 38 sq metres and less than 125 sq metres",
+            ifelse(
+                    grepl("cearnach", x = property_size_description),
+                    "less than 38 sq metres",
+                    property_size_description
+            )
+            ))
+
+    shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
+            prop_description == "greater than 125 sq metres",
+            "ge_125_square_meters",
+            ifelse(
+                    prop_description ==
+                            "greater than or equal to 125 sq metres",
+                    "ge_125_square_meters",
+                    prop_description
+            )
+    )) ##continues....
+  #+end_src
   #+begin_src R :session :tangle ppr/R/ppr.R :exports none
     fix_property_description  <- function(df) {
     remove_irish <- dplyr::mutate(df, prop_description = ifelse(
@@ -650,11 +686,12 @@ head(post_codes_table, n = 12)
 
 Alter our prep_modelling script like so:
 #+begin_src R :session
-readr::write_csv(ppr10, path = "ppr_data_cleaning_done.csv")
+  readr::write_csv(ppr10,
+                   path = "ppr_data_cleaning_done.csv")
 #+end_src
 - This will write the file into our package
 - We can then add it as test data, like we did with the base data
-* Test for Property Description
+* Test for Property Description :noexport:
 
 #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
   ## test_that('new property desc logic is the same as old',{
@@ -675,9 +712,7 @@ readr::write_csv(ppr10, path = "ppr_data_cleaning_done.csv")
 - At this point, we have created functions for each of our data
   cleaning steps
 - The next section is handling test and train sets
-- If I was doing this today, the recipe package would probably be my
-  first port of call
-#+begin_src R
+#+begin_src R :exports none
 library(caret)
 set.seed(34)
 ppr_train_indices <- with(
@@ -685,21 +720,15 @@ ppr_train_indices <- with(
         createDataPartition(log_price,
                 times = 1,
                 p = 0.7,
-                list = FALSE
-        )
-)
+                list = FALSE))
 ppr_train <- ppr10[ppr_train_indices, ]
-
 ppr_not_train <- ppr10[-ppr_train_indices, ]
 ppr_test_indices <- with(
         ppr_not_train,
         createDataPartition(log_price,
                 times = 1,
                 p = 0.5,
-                list = FALSE
-        )
-) 
-
+                list = FALSE)) 
 ppr_test <- ppr_not_train[ppr_test_indices, ]
 ppr_validation <- ppr_not_train[ppr_test_indices, ]
 write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
@@ -762,19 +791,31 @@ rm(ppr_validation)
   #+end_src
 * Add More Tests
   #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
-    test_that('split data has test and train',
-              expect_equal(names(split_data(ppr_for_split)), c("train", "test")))
+        test_that('split data has test and train',
+                  expect_equal(names(
+                    split_data(ppr_for_split)), 
+                               c("train", "test")))
 
-    test_that('split data returns a train tibble',
-              expect_is(split_data(ppr_for_split)$train[1], 'tbl_df'))
+        test_that('split data returns a train tibble',
+                  expect_is(
+                    split_data(ppr_for_split)$train[1],
+                    'tbl_df'))
 
-    test_that('split data returns a test tibble',
-              expect_is(split_data(ppr_for_split)$test[1], 'tbl_df'))
 
-    test_that('split_data train has less rows than input',{
-              train  <- split_data(ppr_for_split)$train
-              expect_gt(nrow(ppr_for_split), nrow(train))}
-              )
+  #+end_src
+* Yet More Tests
+  #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
+          test_that('split data returns a test tibble',
+                  expect_is(
+                    split_data(ppr_for_split)$test[1],
+                    'tbl_df'))
+
+        test_that('split_data train has less rows than input',{
+                  train  <- split_data(ppr_for_split)$train
+                  expect_gt(
+                    nrow(ppr_for_split),
+                    nrow(train))}
+                  )
   #+end_src
 * Refactor :noexport:
 - We now have more tests, so we can actually refactor
@@ -788,7 +829,8 @@ rm(ppr_validation)
 - First thing we do is add a write_csv call to the end of our original
   function
 #+begin_src R :session
-readr::write_csv(test_vtreat_full, path="feature_eng_results_old.csv")
+  readr::write_csv(test_vtreat_full,
+                   path="feature_eng_results_old.csv")
 #+end_src
 * Feature Engineering Integration Test
   #+begin_src R :session :tangle ppr/tests/testthat/int_test_feat_eng.R
@@ -800,6 +842,39 @@ readr::write_csv(test_vtreat_full, path="feature_eng_results_old.csv")
             expect_equal(old, new)
     )
   #+end_src
+* Analysing what the script does
+- Takes the data from the previous script
+- fits a simple glmnet model
+- loads in geocoded register
+- Loads in more data (ppr plus pobal deprivation data)
+- fits a PCA
+- fit a linear model on electoral district
+- loads vtreat
+- applies vtreat functionality to df
+- outputs model matrix from vtreat
+* Cleaning it up
+- We'll focus on the pathway to the vtreat model matrix
+- Ignore the PCA and the simple models for now
+* Create More Datasets
+- We need to load in a sample of our geocoded and pobal data
+- Again, this makes it way easier and more reproducible to run the tests
+#+begin_src R :tangle ppr/data-raw/ppr_gc.R
+ppr_gc <- read_csv(
+        "~/Dropbox/PPR/ppr_geocoded_till_oct2018.csv"
+)
+set.seed(49)
+ppr_sample <- dplyr::sample_frac(ppr_gc, size = 0.05)
+ppr_gc <- ppr_sample
+usethis::use_data(ppr_gc, overwrite = TRUE)
+#+end_src
+* Pobal Data
+#+begin_src R :tangle ppr/data-raw/ppr_pobal.R
+ppr_pobal <- readRDS("~/Dropbox/Code/DDS/ppr_sf_pobal2.rds")
+set.seed(49)
+ppr_pobal_sample <- dplyr::sample_frac(ppr_pobal, size = 0.05)
+ppr_pobal <- ppr_pobal_sample
+usethis::use_data(ppr_pobal, overwrite = TRUE)
+#+end_src
 * Different Approach to Refactoring
 - Instead of abstracting out units of work, abstract out common tasks
 #+begin_src R :session
@@ -810,13 +885,24 @@ sapply(ppr_pobal, n_distinct) %>%
 #+end_src
 - This code is unique
 - But the pattern is common
-#+begin_src R :session :tangle ppr/R/ppr.R
-  ##' .. content for \description{} (no empty lines) ..
+#+begin_src R :exports none
+  count_distinct_values <- function(df) {
+    result  <- sapply(df, dplyr::n_distinct) %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column() %>%
+      dplyr::rename(distincts=`.`) %>%
+      dplyr::arrange(desc(distincts))
+    return(result)
+    }
+#+end_src
+
+#+begin_src R :session :tangle ppr/R/ppr.R :exports none
+  ##' count unique values in all columns of a dataframe
   ##'
-  ##' .. content for \details{} ..
-  ##' @title 
-  ##' @param df 
-  ##' @return 
+  ##' return an ordered data.frame
+  ##' @title count_distinct_values
+  ##' @param df data.frame
+  ##' @return a data.frame
   ##' @author richie
   ##' @export
   count_distinct_values <- function(df) {
@@ -827,76 +913,6 @@ sapply(ppr_pobal, n_distinct) %>%
       dplyr::arrange(desc(distincts))
     return(result)
     }
-#+end_src
-- This is a lot more useful than the original
-- It's also a lot more amenable to testing
-- As always, we start with a characterisation test
-* More Extractions
-  #+begin_src R :session
-  get_max_and_min  <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
-        sapply(., function(x) {
-                      data.frame(
-                              min = min(x, na.rm = TRUE),
-                              max = max(x, na.rm = TRUE)
-                      )
-              }) %>%
-        as.data.frame()
-  #+end_src
-* Becomes
-  #+begin_src R :session :tangle ppr/R/ppr.R
-    ##' .. content for \description{} (no empty lines) ..
-    ##'
-    ##' .. content for \details{} ..
-    ##' @title 
-    ##' @param df 
-    ##' @return 
-    ##' @author richie
-    ##' @export
-    get_max_and_min <- function(df) {
-      maxmin  <- dplyr::select_if(as.data.frame(df),
-                                           is.numeric) %>%
-        sapply(., function(x) {
-          data.frame(
-            min = min(x, na.rm = TRUE),
-            max = max(x, na.rm = TRUE)
-          )
-        }) %>%
-        as.data.frame()
-      return(maxmin)
-    }
-  #+end_src
-* Value Counts
-- This is /literally/ the only thing pandas does better than R
-- I write code like the below far too often for my taste
-#+begin_src R :session :results none
-  post_codes_table <-
-          with(ppr4, table(postal_code, useNA = "always")) %>%
-          as.data.frame() %>%
-          arrange(desc(Freq))
-#+end_src
-* Which can be functionalised like so
-  #+begin_src R :session :results none
-    ##' count distinct values in col of data.frame
-    ##'
-    ##' returns an data.frame ordered by counts
-    ##' @title value_counts
-    ##' @param df a data.frame
-    ##' @param col a character or factor column
-    ##' @return a data.frame ordered by count of values in col
-    ##' @author richie
-    ##' @export
-    value_counts <- function(df, col) {
-      result <-
-        table(eval(substitute(col), envir=df),
-              useNA = "always") %>% 
-        as.data.frame() %>%
-        arrange(desc(Freq))
-
-    }
-  #+end_src
-* Proportion of Missings
-- Again, I have written code like this many, many times
-#+begin_src R :session :tangle ppr/R/ppr.R
   ##' count proportion of NA's in each col of data.frame
   ##'
   ##' see above
@@ -915,14 +931,163 @@ sapply(ppr_pobal, n_distinct) %>%
       dplyr::mutate_if(is.numeric, round, 4)
     return(result)
     }
+  ,#+begin_src R :session :tangle ppr/R/ppr.R
+    ##' get maximum & minimum of all numeric columns in a data.frame
+    ##'
+    ##' see above
+    ##' @title get_max_and_min
+    ##' @param df 
+    ##' @return a data.frame with col, max and min columns
+    ##' @author richie
+    ##' @export
+          get_max_and_min <- function(df) {
+            maxmin  <- dplyr::select_if(as.data.frame(df),
+                                                 is.numeric) %>%
+              sapply(., function(x) {
+                data.frame(
+                  min = min(x, na.rm = TRUE),
+                  max = max(x, na.rm = TRUE)
+                )
+              }) %>%
+              tibble::as_tibble() %>%
+              tibble::rownames_to_column()
+
+            max_min_df  <- tidyr::unnest(max_min, cols=colnames(max_min2))
+            return(max_min_df) }
+    ##' count distinct values in col of data.frame
+    ##'
+    ##' returns an data.frame ordered by counts
+    ##' @title value_counts
+    ##' @param df a data.frame
+    ##' @param col a character or factor column
+    ##' @return a data.frame ordered by count of values in col
+    ##' @author richie
+    ##' @export
+    value_counts <- function(df, col) {
+      result <-
+        table(eval(substitute(col), envir=df),
+              useNA = "always") %>% 
+        as.data.frame() %>%
+        arrange(desc(Freq))
+
+    }
+  ##' load test data
+  ##'
+  ##' see above
+  ##' @title load_test_data
+  ##' @param name 
+  ##' @return a data.frame with test data
+  ##' @author richie
+  ##' @export
+    load_test_data <- function(name) {
+      bpath  <- "../../inst/"
+      result <- readr::read_csv(paste0(bpath, name))
+      return(result)
+    }
+#+end_src
+- This is a lot more useful than the original
+- It's also a lot more amenable to testing
+- As always, we start with a characterisation test
+* More Extractions
+  #+begin_src R :session
+    get_max_and_min  <- select_if(as.data.frame(ppr),
+                                  is.numeric) %>%
+          sapply(., function(x) {
+                        data.frame(
+                                min = min(x, na.rm = TRUE),
+                                max = max(x, na.rm = TRUE)
+                        )
+                }) %>%
+          as.data.frame()
+  #+end_src
+* Becomes
+  #+begin_src R :session :exports code
+        get_max_and_min <- function(df) {
+          maxmin  <- dplyr::select_if(as.data.frame(df),
+                                               is.numeric) %>%
+            sapply(., function(x) {
+              data.frame(
+                min = min(x, na.rm = TRUE),
+                max = max(x, na.rm = TRUE)
+              )
+            }) %>%
+            tibble::as_tibble() %>%
+            tibble::rownames_to_column()
+
+          max_min_df  <- tidyr::unnest(max_min, cols=colnames(max_min2)
+            as.data.frame()
+          return(max_min_df)
+        }
+  #+end_src
+* Value Counts
+- This is /literally/ the only thing pandas does better than R
+- I write code like the below far too often for my taste
+#+begin_src R :session :results none
+  post_codes_table <-
+    with(ppr4, table(postal_code,
+                     useNA = "always")) %>%
+          as.data.frame() %>%
+          arrange(desc(Freq))
+#+end_src
+* Which can be functionalised like so
+  #+begin_src R :session :results none
+    value_counts <- function(df, col) {
+      result <-
+        table(eval(substitute(col), envir=df),
+              useNA = "always") %>% 
+        as.data.frame() %>%
+        arrange(desc(Freq))
+
+    }
+  #+end_src
+* Proportion of Missings
+- Again, I have written code like this many, many times
+#+begin_src R :session 
+  count_proportion_missing <- function(df) {
+    result <- sapply(df, function(x) {
+                sum(is.na(x)) / length(x)
+        }) %>%
+          as.data.frame() %>%
+          tibble::rownames_to_column() %>%
+          dplyr::arrange(desc(`.`)) %>%
+      dplyr::mutate_if(is.numeric, round, 4)
+    return(result)
+    }
 #+end_src
 
 * I don't actually need these functions to run the script
 - But I can add the data from the originals as test data to get
   started
+- And thus ensure that my changes don't break anything
+- To be honest, the last few functions are probably the most useful
+  thing in my package right now
+- Certainly, they are the most re-usable
+- They do need some tests
+* Lazy Man's approach to testing
+- This is my philosophy
+- Minimum testing for maximum output
+- We add a few write_csv calls for each of our outputs
+- And use that data for testing
+* Write a function to make this easier
+- We have lots of annoying relative paths in our test data loading
+- let's abstract this away from our concerns
+#+begin_src R :results none
+  load_test_data <- function(name) {
+    bpath  <- "../../inst/"
+    result <- readr::read_csv(paste0(bpath, name))
+    return(result)
+  }
+#+end_src
+* Tests for our Data Analysis Functions
+  #+begin_src R :sess
+    require(ppr)
+    require(testthat)
+    count_distincts_old <- load_test_data("count_distincts_test_data.csv")
+    test_that('count_distinct old and new are equal',
+              expect_equal(
+  #+end_src
 
-
-** Top Six Refactorings
+** Top Six Refactorings :noexport:
 
 *** Extract Function
 

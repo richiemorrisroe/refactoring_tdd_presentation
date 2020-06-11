@@ -1,3 +1,4 @@
+ppr_train <- readr::read_csv("prep_modelling_output_refactor.csv")
 with(ppr_train, BoxCoxTrans(price))
 
 ppr_train3 <- select(
