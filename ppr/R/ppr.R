@@ -162,10 +162,10 @@ split_data <- function(df) {
   ppr_train_indices <- with(
     df,
     caret::createDataPartition(log_price,
-                        times = 1,
-                        p = 0.7,
-                        list = FALSE
-                        )
+                               times = 1,
+                               p = 0.7,
+                               list = FALSE
+                               )
   ) %>% as.vector() #because tibble sucks
   ppr_train <- df[ppr_train_indices, ]
 
@@ -173,10 +173,10 @@ split_data <- function(df) {
   ppr_test_indices <- with(
     ppr_not_train,
     caret::createDataPartition(log_price,
-                        times = 1,
-                        p = 0.5,
-                        list = FALSE
-                        )
+                               times = 1,
+                               p = 0.5,
+                               list = FALSE
+                               )
   ) %>% as.vector()
 
   ppr_test <- ppr_not_train[ppr_test_indices, ]

@@ -765,10 +765,10 @@ rm(ppr_validation)
       ppr_train_indices <- with(
         df,
         caret::createDataPartition(log_price,
-                            times = 1,
-                            p = 0.7,
-                            list = FALSE
-                            )
+                                   times = 1,
+                                   p = 0.7,
+                                   list = FALSE
+                                   )
       ) %>% as.vector() #because tibble sucks
       ppr_train <- df[ppr_train_indices, ]
 
@@ -776,10 +776,10 @@ rm(ppr_validation)
       ppr_test_indices <- with(
         ppr_not_train,
         caret::createDataPartition(log_price,
-                            times = 1,
-                            p = 0.5,
-                            list = FALSE
-                            )
+                                   times = 1,
+                                   p = 0.5,
+                                   list = FALSE
+                                   )
       ) %>% as.vector()
 
       ppr_test <- ppr_not_train[ppr_test_indices, ]
@@ -817,13 +817,15 @@ rm(ppr_validation)
                     nrow(train))}
                   )
   #+end_src
-* Refactor :noexport:
+* Refactor!
 - We now have more tests, so we can actually refactor
 - The first (and most important) refactoring is to get a handle on
   global variables
 - Because of R's lexical scope, these are often a source of latent
   (and horrible) bugs
 ** TODO come back to this later
+* Split Data Refactoring
+- We need to generalise the function so it takes a column for outcome
 * Feature Engineering
 - We now move on to the next script
 - First thing we do is add a write_csv call to the end of our original
