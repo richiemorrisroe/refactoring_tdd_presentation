@@ -875,6 +875,35 @@ ppr_pobal_sample <- dplyr::sample_frac(ppr_pobal, size = 0.05)
 ppr_pobal <- ppr_pobal_sample
 usethis::use_data(ppr_pobal, overwrite = TRUE)
 #+end_src
+* Run these scripts
+- Weirdly, despite these being in the package directory, nothing is
+  done unless you execute the scripts into a running process
+- So make sure you do that
+- You also need to document your datasets, but we'll avoid that for
+  now
+- Note that you'll need to update the integration test after adding
+  data to the package
+- Also note that sampling breaks the integration tests, unless you use
+  set.seed
+* Write Some Tests
+
+* Vtreat Pipeline 
+  #+begin_src R :session
+    generate_model_matrix <- function(df, varlist, outcomename, calibration_size) {
+      df_calibration <- dplyr::sample_frac(df, size=calibration_size)
+      df_train  <- dplyr::anti_join(df, df_calibration)
+      tf <- designTreatmentsN(df,
+                              varlist = varlist,
+                              outcomename = outcomename
+                              )
+      result <- prepare(tf,
+                         dframe = df_train
+                         )
+      return(result)
+    }
+  #+end_src
+
+
 * Different Approach to Refactoring
 - Instead of abstracting out units of work, abstract out common tasks
 #+begin_src R :session

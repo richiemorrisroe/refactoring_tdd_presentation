@@ -1,5 +1,6 @@
 require(tidyverse)
 require(ppr)
+set.seed(23)
 ppr_train <- readr::read_csv("prep_modelling_output_refactor.csv")
 with(ppr_train, caret::BoxCoxTrans(price))
 
@@ -135,6 +136,7 @@ ggplot(ed_count, aes(x = count)) +
 
 # otherwise the below errors out
 ppr_pobal_s <- sample_frac(ppr_pobal, size = 0.1)
+## ppr_pobal_s  <- ppr_pobal
 ## takes a loooooonnnnng time
 lm_ed1 <- lm(log(price) ~ electoral_district_id,
         data = ppr_pobal_s
@@ -153,7 +155,7 @@ treat <- designTreatmentsN(ppr_train_s2,
 train_prep <- prepare(treat,
         dframe = ppr_pobal_s
 )
-set.seed(23)
+
 ppr_pobal_test <- sample_frac(ppr_pobal, size = 0.1)
 test_vtreat <- prepare(treat, ppr_pobal_test)
 ## glmnet_preds <- predict(glmnet_ed1,
