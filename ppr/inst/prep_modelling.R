@@ -24,7 +24,7 @@ ggplot(ppr2, aes(x = price / 100)) +
         geom_density() +
         scale_x_continuous(labels = scales::dollar_format(prefix = "€"))
 
-ppr3 <- mutate(ppr2, price = price / 100, is_big = ifelse(price >= 2e6, "Big", "Not Big"))
+ppr3 <- mark_values_as_large(ppr2, large = 2e6)
 ppr3 %>%
         ggplot(aes(x = price)) +
         geom_density() +
