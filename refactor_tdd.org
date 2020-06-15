@@ -67,8 +67,8 @@ python has lots of examples but R has very few.
 - This means we need to make sure our code is correct
 
 * This Talk
-- I will talk about tools to improve the quality of code, and our
-  confidence in it
+- I will provide an introduction tools to improve the quality of code, and our
+  confidence in it (examples in R)
 - These tools are:
   - Automated testing
   - Refactoring
@@ -85,7 +85,7 @@ python has lots of examples but R has very few.
 
 * My Code is so awful that it can't be tested
 - This is depressingly normal
-- You want some kind of characteristic test
+- You want some kind of characteristation test
 - This is often a dataframe type structure
 - The quickest test is to ensure that both dataframes are equal
 - There is a /wonderful/ book that guides you through this
@@ -168,10 +168,10 @@ python has lots of examples but R has very few.
   - more effort
   - appeasing the mighty gods of check takes time
 * Next steps
-- We have three scripts:
+- We have two scripts:
   - prep_modelling.R
   - feature_engineering.R
-  - models.R
+  # - models.R
 * Step 0: Create a custom environment
 - I use [[https://docs.conda.io/en/latest/][conda]] for this
 - It supports multiple languages, and compiled dependencies
@@ -223,7 +223,8 @@ usethis::use_data(ppr, overwrite = TRUE)
 - We add all the scripts to inst/, which is where we'll put the test
   data also
 #+begin_src R :session
-readr::write_csv(ppr_train2, path = "prep_modelling_output_old.csv")
+  readr::write_csv(ppr_train2,
+                   path = "prep_modelling_output_old.csv")
 #+end_src
 - We put this at the end of our script
 - Then, we run it like so:
@@ -232,7 +233,8 @@ cd ppr/inst/
 Rscript prep_modelling.R
 #+end_src
 - We then output the full file
-- However, because we took a 5% sample earlier, we need to change things
+- However, because we took a 5% sample earlier, we need to change
+  things
 * Handling the sample
 - We have the data in our package [fn:7]
 - We need to change our script to use the package data
@@ -261,14 +263,15 @@ cp prep_modelling.R prep_modelling_refactor.R
     data(ppr)
     names(ppr)
   #+end_src
-
+* Add Test Directories
 #+begin_src sh :results none
   mkdir ppr/tests
   mkdir ppr/tests/testthat/
   touch ppr/tests/testthat/test_first.R
   touch ppr/tests/testthat/test_integration_prep_modelling.R
 #+end_src
-
+- You can do this with *usethis*, but it was borked for me when I
+  tried, so I did it manually
 * Integration Test
   #+begin_src R :session :tangle ppr/tests/testthat/test_integration_prep_modelling.R
   context("integration test prep_modelling")
@@ -291,8 +294,73 @@ test_that(
   testthat::test_file(
               "../tests/testthat/test_integration_prep_modelling.R")
 #+end_src
-
-* First Steps First
+* Lazy Man's approach to testing
+- This is my philosophy
+- Minimum testing for maximum output
+- We add a few write_csv calls for each of our outputs
+- And use that data for testing
+* Write a function to make this easier: loading
+- We have lots of annoying relative paths in our test data loading
+- let's abstract this away from our concerns
+#+begin_src R :results none :tangle ppr/R/testing.R
+  load_test_data <- function(name) {
+    bpath  <- "../../inst/"
+    result <- readRDS(paste0(bpath, name))
+    return(result)
+  }
+#+end_src
+#+begin_src R :session :tangle ppr/R/testing.R
+   ##' .. content for \description{} (no empty lines) ..
+   ##'
+   ##' .. content for \details{} ..
+   ##' @title 
+   ##' @param obj 
+   ##' @return 
+   ##' @author richie
+   ##' @export
+   save_test_data <- function(obj) {
+     obj_name  <- substitute(obj)
+     bpath  <- "../../inst/" #relative to testdir
+     save_file_name  <- paste0(bpath, "/", obj_name, "_test_data", ".rds")
+     saveRDS(obj, save_file_name)
+     return(NULL)
+     }
+  ##' .. content for \description{} (no empty lines) ..
+  ##'
+  ##' .. content for \details{} ..
+  ##' @title 
+  ##' @param name 
+  ##' @return 
+  ##' @author richie
+  ##' @export
+  load_test_data <- function(name) {
+    bpath  <- "../../inst/"
+    result <- readRDS(paste0(bpath, name))
+    return(result)
+  }
+#+end_src
+* Abstract Saving files
+- First, write a test
+ #+begin_src R :session :tangle ppr/tests/testthat/test_load_save.R
+   context("test saving and loading")
+   data(ppr)
+   ppr_test_load_save  <- ppr
+   save_test_data(ppr_test_load_save)
+   expect_equal(ppr, load_test_data("ppr_test_load_save_test_data.rds"))
+ #+end_src
+- This actually tests both functions, and handles the invariant we
+  care about (that the saved data should be easily comparable to the test data)
+* Write a function to make the test pass
+ #+begin_src R :results none :tangle ppr/R/testing.R
+   save_test_data <- function(obj) {
+     obj_name  <- substitute(obj)
+     bpath  <- "../../inst/" #relative to testdir
+     save_file_name  <- paste0(bpath, "/", obj_name, "_test_data", ".rds")
+     saveRDS(obj, save_file_name)
+     return(NULL)
+     }
+ #+end_src
+* Move existing functions to file
 - Move the functions we have to a file
 - Change our script to load the functions from this file
 #+begin_src R :session :tangle ppr/R/ppr.R :exports none
@@ -321,6 +389,14 @@ test_that(
           names(df) <- drop_usc # update names
           df # return dataframe
   }
+
+  ##' fix_price
+  ##'
+  ##' remove commas from vector
+  ##' @title fix_price
+  ##' @param x a vector of numbers with commas
+  ##' @return the same vector, without commas
+  ##' @author richie
   fix_price <- function(x) {
           nopunct <- gsub(",", "", x = x)
           nums <- as.numeric(
@@ -380,7 +456,7 @@ test_that(
 - Let's write it
 * Loading Data
 
-#+begin_src R :session :tangle ppr/R/ppr.R :exports none
+#+begin_src R :session :tangle ppr/R/ppr.R :exports code
   load_data <- function(path) {
     ppr <- readxl::read_excel(path, sheet = "PPR-ALL")
     return(ppr)
@@ -406,7 +482,7 @@ test_that(
      })
    #+end_src
 - We just grab the output of normalise_names, and test that
-- this is a shitty test; try to test the actual invariants on edge cases
+- this is a crummy test; try to test the actual invariants on edge cases
 * Test Fix Price
    #+begin_src R :tangle ppr/tests/testthat/test_first.R
 
@@ -440,15 +516,7 @@ test_that(
 - We have a failing test, so we can fix this code (and make sure it
   stays fixed, which is normally more valuable)
 * Fix Price Fix
-   #+begin_src R :exports code :tangle ppr/R/ppr.R
-     ##' fix_price
-     ##'
-     ##' remove commas from a vector. Normally used to handle numbers with commas
-     ##' @title fix_price
-     ##' @param x a vector 
-     ##' @return a numeric vector
-     ##' @author richie
-     ##' @export
+   #+begin_src R :exports code 
      fix_price <- function(x) {
              nopunct <- gsub(",", "", x = x)
              nums <- as.numeric(
@@ -461,7 +529,7 @@ test_that(
    #+end_src
 - We just remove the part of the gsub call that matches dots
 - Now all our tests pass
-* Generate Bootstrap Results
+* Generate Bootstrap Results :nexport:
 - I'll leave testing this for now, as I probably need to do the
   feature normalisation first
 * Break out components
@@ -614,7 +682,21 @@ head(post_codes_table, n = 12)
 * Property Description Function
   #+begin_src R :exports code
       fix_property_description  <- function(df) {
-    remove_irish <- dplyr::mutate(df, prop_description = ifelse(
+    fix_new <- mutate(df,
+            description_of_property =
+                    ifelse(
+                            grepl("Nua", x = description_of_property),
+                            "New Dwelling house /Apartment",
+                            ifelse(
+                                    grepl("Ath", x = description_of_property),
+                                    "Second-Hand Dwelling house /Apartment",
+                                    ## nested ifelse are pretty useful
+                                    description_of_property
+                            )
+                    )
+    )
+
+    remove_irish <- dplyr::mutate(fix_new, prop_description = ifelse(
             grepl("cothrom", x = property_size_description),
             "greater than or equal to 38 sq metres and less than 125 sq metres",
             ifelse(
@@ -690,7 +772,7 @@ Alter our prep_modelling script like so:
                    path = "ppr_data_cleaning_done.csv")
 #+end_src
 - This will write the file into our package
-- We can then add it as test data, like we did with the base data
+# - We can then add it as test data, like we did with the base data
 * Test for Property Description :noexport:
 
 #+begin_src R :session :tangle ppr/tests/testthat/test_first.R
@@ -817,14 +899,14 @@ rm(ppr_validation)
                     nrow(train))}
                   )
   #+end_src
-* Refactor!
+* Refactor! :noexport:
 - We now have more tests, so we can actually refactor
 - The first (and most important) refactoring is to get a handle on
   global variables
 - Because of R's lexical scope, these are often a source of latent
   (and horrible) bugs
 ** TODO come back to this later
-* Split Data Refactoring
+* Split Data Refactoring :noexport:
 - We need to generalise the function so it takes a column for outcome
 * Feature Engineering
 - We now move on to the next script
@@ -853,7 +935,7 @@ rm(ppr_validation)
 - fit a linear model on electoral district
 - loads vtreat
 - applies vtreat functionality to df
-- outputs model matrix from vtreat
+- outputs model matrix [fn:8] from vtreat
 * Cleaning it up
 - We'll focus on the pathway to the vtreat model matrix
 - Ignore the PCA and the simple models for now
@@ -891,7 +973,9 @@ usethis::use_data(ppr_pobal, overwrite = TRUE)
 
 * Vtreat Pipeline 
   #+begin_src R :session
-    generate_model_matrix <- function(df, varlist, outcomename, calibration_size) {
+    generate_model_matrix <- function(df, varlist,
+                                      outcomename,
+                                      calibration_size) {
       df_calibration <- dplyr::sample_frac(df, size=calibration_size)
       df_train  <- dplyr::anti_join(df, df_calibration)
       tf <- designTreatmentsN(df,
@@ -905,6 +989,9 @@ usethis::use_data(ppr_pobal, overwrite = TRUE)
     }
   #+end_src
 
+* Subtleties and Problems
+- Sampling will break lots of tests given the approach we're using
+- You can either set.seed or reduce the input data outside 
 
 * Different Approach to Refactoring
 - Instead of abstracting out units of work, abstract out common tasks
@@ -937,11 +1024,12 @@ sapply(ppr_pobal, n_distinct) %>%
   ##' @author richie
   ##' @export
   count_distinct_values <- function(df) {
-    result  <- sapply(df, dplyr::n_distinct) %>%
-      as.data.frame() %>%
-      tibble::rownames_to_column() %>%
-      dplyr::rename(distincts=`.`) %>%
-      dplyr::arrange(desc(distincts))
+    res1  <- sapply(df, dplyr::n_distinct) %>%
+      as.data.frame()
+    res2  <- res1 %>% 
+      tibble::rownames_to_column() 
+      result  <- res2 %>%
+      dplyr::arrange(desc(`.`))
     return(result)
     }
   ##' count proportion of NA's in each col of data.frame
@@ -983,7 +1071,8 @@ sapply(ppr_pobal, n_distinct) %>%
               tibble::as_tibble() %>%
               tibble::rownames_to_column()
 
-            max_min_df  <- tidyr::unnest(max_min, cols=colnames(max_min2))
+            max_min_df  <- tidyr::unnest(max_min,
+                                         cols=colnames(max_min2))
             return(max_min_df) }
     ##' count distinct values in col of data.frame
     ##'
@@ -1033,23 +1122,25 @@ sapply(ppr_pobal, n_distinct) %>%
   #+end_src
 * Becomes
   #+begin_src R :session :exports code
-        get_max_and_min <- function(df) {
-          maxmin  <- dplyr::select_if(as.data.frame(df),
-                                               is.numeric) %>%
-            sapply(., function(x) {
-              data.frame(
-                min = min(x, na.rm = TRUE),
-                max = max(x, na.rm = TRUE)
-              )
-            }) %>%
-            tibble::as_tibble() %>%
-            tibble::rownames_to_column()
+    get_max_and_min <- function(df) {
+      maxmin  <- dplyr::select_if(as.data.frame(df),
+                                           is.numeric) %>%
+        sapply(., function(x) {
+          data.frame(
+            min = min(x, na.rm = TRUE),
+            max = max(x, na.rm = TRUE)
+          )
+        }) %>%
+        tibble::as_tibble() %>%
+        tibble::rownames_to_column()
 
-          max_min_df  <- tidyr::unnest(max_min, cols=colnames(max_min2)
-            as.data.frame()
-          return(max_min_df)
-        }
+      max_min_df  <- tidyr::unnest(maxmin,
+                                   cols=colnames(maxmin)
+        as.data.frame()
+      return(max_min_df)
+    }
   #+end_src
+
 * Value Counts
 - This is /literally/ the only thing pandas does better than R
 - I write code like the below far too often for my taste
@@ -1061,7 +1152,7 @@ sapply(ppr_pobal, n_distinct) %>%
           arrange(desc(Freq))
 #+end_src
 * Which can be functionalised like so
-  #+begin_src R :session :results none
+  #+begin_src R :session :results none 
     value_counts <- function(df, col) {
       result <-
         table(eval(substitute(col), envir=df),
@@ -1094,29 +1185,37 @@ sapply(ppr_pobal, n_distinct) %>%
   thing in my package right now
 - Certainly, they are the most re-usable
 - They do need some tests
-* Lazy Man's approach to testing
-- This is my philosophy
-- Minimum testing for maximum output
-- We add a few write_csv calls for each of our outputs
-- And use that data for testing
-* Write a function to make this easier
-- We have lots of annoying relative paths in our test data loading
-- let's abstract this away from our concerns
-#+begin_src R :results none
-  load_test_data <- function(name) {
-    bpath  <- "../../inst/"
-    result <- readr::read_csv(paste0(bpath, name))
-    return(result)
-  }
-#+end_src
+
 * Tests for our Data Analysis Functions
-  #+begin_src R :sess
+  #+begin_src R :session :tangle ppr/tests/testthat/test_funcs.R
     require(ppr)
     require(testthat)
     count_distincts_old <- load_test_data("count_distincts_test_data.csv")
     test_that('count_distinct old and new are equal',
-              expect_equal(
+              expect_equal(count_distinct_values(ppr_pobal),
+                           count_distincts_old))
   #+end_src
+- And it fails [fn:9]
+* More Tests
+  #+begin_src R :session :tangle ppr/tests/testthat/test_funcs.R
+    maxmin_old <- load_test_data("get_max_and_min_test_data.csv")
+    test_that('get_max_and_min old and new are equal',
+              expect_equal(get_max_and_min(ppr_pobal),
+                           maxmin_old))
+  #+end_src
+* Yet More Tests
+  #+begin_src R :session :tangle ppr/tests/testthat/test_funcs.R
+    missings_old <- load_test_data("count_prop_missings_test_data.csv")
+    test_that('count_prop_missings old and new are equal',
+              expect_equal(count_proportion_missing(ppr_pobal),
+                           missings_old))
+  #+end_src
+
+* Further Work
+- I haven't covered that much [[https://www.informit.com/store/refactoring-improving-the-design-of-existing-code-9780134757599][refactoring]]
+- I haven't covered that much [[https://www.amazon.co.uk/Test-Driven-Development-Addison-Wesley-Signature/dp/0321146530][TDD]]
+- I haven't covered that much [[https://www.amazon.co.uk/Working-Effectively-Legacy-Michael-Feathers/dp/0131177052/][working with legacy code]]
+- But hopefully I have given an introduction to them
 
 ** Top Six Refactorings :noexport:
 
@@ -1143,6 +1242,10 @@ sapply(ppr_pobal, n_distinct) %>%
 *** Split Phase
 
 * Footnotes
+
+[fn:9] always make sure your tests fail when they're supposed to 
+
+[fn:8] it's actually a df, but it is very very similar to a model matrix  
 
 [fn:7] right now, it's the /only/ thing in the package  
 

@@ -23,6 +23,14 @@ normalise_names <- function(df) {
         names(df) <- drop_usc # update names
         df # return dataframe
 }
+
+##' fix_price
+##'
+##' remove commas from vector
+##' @title fix_price
+##' @param x a vector of numbers with commas
+##' @return the same vector, without commas
+##' @author richie
 fix_price <- function(x) {
         nopunct <- gsub(",", "", x = x)
         nums <- as.numeric(
@@ -65,24 +73,6 @@ load_data <- function(path) {
   ppr <- readxl::read_excel(path, sheet = "PPR-ALL")
   return(ppr)
   }
-
-##' fix_price
-##'
-##' remove commas from a vector. Normally used to handle numbers with commas
-##' @title fix_price
-##' @param x a vector 
-##' @return a numeric vector
-##' @author richie
-##' @export
-fix_price <- function(x) {
-        nopunct <- gsub(",", "", x = x)
-        nums <- as.numeric(
-                iconv(nopunct, "latin1",
-                        "ASCII",
-                        sub = ""
-                )
-        )
-}
 
 mark_values_as_large <- function(df, large) {
   large <- rlang::enquo(large)
@@ -195,11 +185,12 @@ split_data <- function(df) {
 ##' @author richie
 ##' @export
 count_distinct_values <- function(df) {
-  result  <- sapply(df, dplyr::n_distinct) %>%
-    as.data.frame() %>%
-    tibble::rownames_to_column() %>%
-    dplyr::rename(distincts=`.`) %>%
-    dplyr::arrange(desc(distincts))
+  res1  <- sapply(df, dplyr::n_distinct) %>%
+    as.data.frame()
+  res2  <- res1 %>% 
+    tibble::rownames_to_column() 
+    result  <- res2 %>%
+    dplyr::arrange(desc(`.`))
   return(result)
   }
 ##' count proportion of NA's in each col of data.frame
@@ -241,7 +232,8 @@ count_proportion_missing <- function(df) {
             tibble::as_tibble() %>%
             tibble::rownames_to_column()
 
-          max_min_df  <- tidyr::unnest(max_min, cols=colnames(max_min2))
+          max_min_df  <- tidyr::unnest(max_min,
+                                       cols=colnames(max_min2))
           return(max_min_df) }
   ##' count distinct values in col of data.frame
   ##'

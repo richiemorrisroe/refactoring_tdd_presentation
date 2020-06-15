@@ -60,6 +60,7 @@ names(shp@data[, 13:length(shp@data)])
 library(sp)
 library(sf) # spatial simple features library
 data(ppr_pobal)
+
 ## ppr_pobal <- readRDS("~/Dropbox/Code/DDS/ppr_sf_pobal2.rds")
 
 ppr_gc2 <- filter(ppr_gc, !is.na(latitude), !is.na(electoral_district))
@@ -71,10 +72,10 @@ ppr_gc_sf <- st_as_sf(sp_ppr)
 
 count_distincts  <- sapply(ppr_pobal, n_distinct) %>%
         as.data.frame() %>%
-        rownames_to_column() %>%
+        rownames_to_column("column") %>%
         arrange(desc(`.`))
 
-
+print(dim(count_distincts))
 readr::write_csv(count_distincts, path = "count_distincts_test_data.csv")
 
 max_min2 <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
@@ -98,7 +99,7 @@ count_missings  <- sapply(ppr_pobal, function(x) {
     head(n = 5)
 
 readr::write_csv(count_missings, path = "count_prop_missings_test_data.csv")
-message("got here 2")
+
 
 num_vars <- as.data.frame(ppr_pobal) %>%
         na.omit() %>%
