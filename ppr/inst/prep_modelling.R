@@ -38,7 +38,7 @@ ggplot(ppr3, aes(x = log(price))) +
         ) +
         xlab("log price, euros")
 
-ppr4 <- mutate(ppr3, log_price = log_column(price))
+ppr4 <- log_column(ppr3, price)
 ggplot(ppr4, aes(x = log_price)) +
         geom_density() +
         xlab("log price, euros")

@@ -31,6 +31,7 @@ normalise_names <- function(df) {
 ##' @param x a vector of numbers with commas
 ##' @return the same vector, without commas
 ##' @author richie
+##' @export
 fix_price <- function(x) {
         nopunct <- gsub(",", "", x = x)
         nums <- as.numeric(
@@ -40,6 +41,22 @@ fix_price <- function(x) {
                 )
         )
 }
+##' log column
+##'
+##' as above
+##' @title log_column
+##' @param df 
+##' @param col 
+##' @return a data.frame with a log_price column added
+##' @author richie
+##' @export
+log_column <- function(df, col) {
+      col <- rlang::enquo(col)
+      res <- dplyr::mutate(df,
+                           log_price =
+                             log(!!col, base = 10))
+      return(res)
+      }
 ##' fit a simple model, bootstrap the results
 ##'
 ##' see above
@@ -74,6 +91,15 @@ load_data <- function(path) {
   return(ppr)
   }
 
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title mark_values_as_large
+##' @param df 
+##' @param large 
+##' @return 
+##' @author richie
+##' @export
 mark_values_as_large <- function(df, large) {
   large <- rlang::enquo(large)
   ppr3 <- dplyr::mutate(df,
