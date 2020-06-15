@@ -99,8 +99,8 @@ with(ppr5, table(vat_exclusive, useNA = "always"))
 with(ppr5, table(description_of_property))
 
 ppr10 <- fix_property_description(ppr5)
-
-readr::write_csv(ppr10, path = "ppr_data_cleaning_done.csv")
+ppr_data_cleaning_done <- ppr10
+save_test_data(ppr_data_cleaning_done)
 
 ppr_train_test <- split_data(ppr10)
 ppr_train  <- ppr_train_test$train
