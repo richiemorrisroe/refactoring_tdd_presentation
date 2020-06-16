@@ -100,6 +100,7 @@ with(ppr5, table(description_of_property))
 
 ppr10 <- fix_property_description(ppr5)
 ppr_data_cleaning_done <- ppr10
+save_test_data(ppr_data_cleaning_done)
 readr::write_csv(ppr_data_cleaning_done, path = "ppr_data_cleaning_done.csv")
 message("got here")
 ppr_train_test <- split_data(ppr_data_cleaning_done)

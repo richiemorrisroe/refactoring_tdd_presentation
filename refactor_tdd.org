@@ -318,24 +318,13 @@ test_that(
    ##' @return 
    ##' @author richie
    ##' @export
-   save_test_data <- function(obj) {
-     obj_name  <- substitute(obj)
-     cur_working_dir  <- getwd()
-     split_wd  <- unlist(stringr::str_split(cur_working_dir, "/"))
-     print(split_wd)
-     if(tail(split_wd, n=1)=="inst") {
+     save_test_data <- function(obj) {
+       obj_name  <- substitute(obj)
        bpath  <- ""
-     }
-     if(tail(split_wd, n=1)=="testthat") {
-       bpath  <- "../../inst" 
-     }
-     else {
-       stop("not sure where to save files")
+       save_file_name  <- paste0(bpath, obj_name, "_test_data", ".rds")
+       saveRDS(obj, save_file_name)
+       return(NULL)
        }
-     save_file_name  <- paste0(bpath, "/", obj_name, "_test_data", ".rds")
-     saveRDS(obj, save_file_name)
-     return(NULL)
-     }
   ##' .. content for \description{} (no empty lines) ..
   ##'
   ##' .. content for \details{} ..
@@ -362,21 +351,11 @@ test_that(
 - This actually tests both functions, and handles the invariant we
   care about (that the saved data should be easily comparable to the test data)
 * Write a function to make the test pass
- #+begin_src R :results none :tangle ppr/R/testing.R
+ #+begin_src R :results none 
    save_test_data <- function(obj) {
      obj_name  <- substitute(obj)
-     cur_working_dir  <- getwd()
-     split_wd  <- unlist(stringr::str_split(cur_working_dir, "/"))
-     if(tail(split_wd, n=1)=="inst") {
-       bpath  <- ""
-     }
-     if(tail(split_wd, n=1)=="testthat") {
-       bpath  <- "../../inst" #relative to testdir
-     }
-     else {
-       stop("not sure where to save files")
-       }
-     save_file_name  <- paste0(bpath, "/", obj_name, "_test_data", ".rds")
+     bpath  <- ""
+     save_file_name  <- paste0(bpath, obj_name, "_test_data", ".rds")
      saveRDS(obj, save_file_name)
      return(NULL)
      }
@@ -502,7 +481,6 @@ test_that(
   ##' @author richie
   ##' @export
   split_data <- function(df) {
-      set.seed(34)
       ppr_train_indices <- with(
         df,
         caret::createDataPartition(log_price,
@@ -831,45 +809,58 @@ head(post_codes_table, n = 12)
     ##' @author richie
     ##' @export
     fix_property_description  <- function(df) {
-    remove_irish <- dplyr::mutate(df, prop_description = ifelse(
-            grepl("cothrom", x = property_size_description),
-            "greater than or equal to 38 sq metres and less than 125 sq metres",
-            ifelse(
-                    grepl("cearnach", x = property_size_description),
-                    "less than 38 sq metres",
-                    property_size_description
-            )
-            ))
+      fix_new <- dplyr::mutate(df,
+                        description_of_property =
+                          ifelse(
+                            grepl("Nua", x = description_of_property),
+                            "New Dwelling house /Apartment",
+                          ifelse(
+                            grepl("Ath", x = description_of_property),
+                            "Second-Hand Dwelling house /Apartment",
+                            ## nested ifelse are pretty useful
+                            description_of_property
+                          )
+                          )
+                        )
+      remove_irish <- dplyr::mutate(fix_new, prop_description = ifelse(
+                                               grepl("cothrom", x = property_size_description),
+                                               "greater than or equal to 38 sq metres and less than 125 sq metres",
+                                                                ifelse(
+                                                                  grepl("cearnach", x = property_size_description),
+                                                                  "less than 38 sq metres",
+                                                                  property_size_description
+                                                                )
+                                             ))
 
-    shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
-            prop_description == "greater than 125 sq metres",
-            "ge_125_square_meters",
-            ifelse(
-                    prop_description ==
-                            "greater than or equal to 125 sq metres",
-                    "ge_125_square_meters",
-                    prop_description
-            )
-    ))
+      shorten_greater_than <- dplyr::mutate(remove_irish, prop_description = ifelse(
+                                                            prop_description == "greater than 125 sq metres",
+                                                            "ge_125_square_meters",
+                                                                             ifelse(
+                                                                               prop_description ==
+                                                                               "greater than or equal to 125 sq metres",
+                                                                               "ge_125_square_meters",
+                                                                               prop_description
+                                                                             )
+                                                          ))
 
-    shorten_less_than_greater_than <-
-      dplyr::mutate(shorten_greater_than,
-                    property_size_description = ifelse(
-                      prop_description == "less than 38 sq metres",
-                      "lt_38_square_meters",
-                                                ifelse(
-                                                  prop_description ==
-                                                  "greater than or equal to 38 sq metres and less than 125 sq metres",
-                                                  "ge_38_lt_125_square_meters",
-                                                  prop_description
-                                                )
-                    )) %>%
-            dplyr::select(-prop_description) # pointless now
-    result <- dplyr::mutate(shorten_less_than_greater_than,
-                            property_size_description = as.character(
-                              forcats::fct_explicit_na(property_size_description))
-            )
-    return(result)
+      shorten_less_than_greater_than <-
+        dplyr::mutate(shorten_greater_than,
+                      property_size_description = ifelse(
+                        prop_description == "less than 38 sq metres",
+                        "lt_38_square_meters",
+                                                  ifelse(
+                                                    prop_description ==
+                                                    "greater than or equal to 38 sq metres and less than 125 sq metres",
+                                                    "ge_38_lt_125_square_meters",
+                                                    prop_description
+                                                  )
+                      )) %>%
+        dplyr::select(-prop_description) # pointless now
+      result <- dplyr::mutate(shorten_less_than_greater_than,
+                              property_size_description = as.character(
+                                forcats::fct_explicit_na(property_size_description))
+                              )
+      return(result)
     }
   #+end_src
 * Testing our Property Description Logic
