@@ -290,8 +290,8 @@ split_data <- function(df) {
 count_distinct_values <- function(df) {
   res1  <- sapply(df, dplyr::n_distinct) %>%
     as.data.frame()
-  res2  <- res1 %>% 
-    tibble::rownames_to_column() 
+  res2  <- res1 %>%
+    tibble::rownames_to_column(var="column") 
     result  <- res2 %>%
     dplyr::arrange(desc(`.`))
   return(result)
