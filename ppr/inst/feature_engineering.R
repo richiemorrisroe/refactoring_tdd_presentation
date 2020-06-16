@@ -76,7 +76,7 @@ count_distincts  <- sapply(ppr_pobal, n_distinct) %>%
         arrange(desc(`.`))
 
 print(dim(count_distincts))
-readr::write_csv(count_distincts, path = "count_distincts_test_data.csv")
+save_test_data(count_distincts)
 
 max_min2 <- select_if(as.data.frame(ppr_pobal), is.numeric) %>%
         sapply(., function(x) {
