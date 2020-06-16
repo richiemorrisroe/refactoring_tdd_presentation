@@ -1,6 +1,6 @@
 require(ppr)
 require(testthat)
-count_distincts_old <- load_test_data("count_distincts_test_data.csv")
+count_distincts_old <- load_test_data("count_distincts_test_data.rds")
 test_that('count_distinct old and new are equal',
           expect_equal(count_distinct_values(ppr_pobal),
                        count_distincts_old))

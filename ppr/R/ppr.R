@@ -115,7 +115,6 @@ generate_bootstrap_results <- function(df, ind) {
 ##' @author richie
 ##' @export
 split_data <- function(df) {
-    set.seed(34)
     ppr_train_indices <- with(
       df,
       caret::createDataPartition(log_price,
