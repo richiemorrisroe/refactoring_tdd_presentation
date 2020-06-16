@@ -56,7 +56,28 @@ log_column <- function(df, col) {
                            log_price =
                              log(!!col, base = 10))
       return(res)
-      }
+}
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title invert_field
+##' @param df 
+##' @param field 
+##' @return 
+##' @author richie
+##' @export
+invert_field <- function(df, field) {
+       field  <- rlang::enquo(field)
+       ppr5 <- dplyr::mutate(df,
+                  is_full_market_price = ifelse(
+                          !!field == "No",
+                          "Yes",
+                          "No"
+                  )
+                  ) %>%
+         dplyr::select(-not_full_market_price)
+       return(ppr5)
+     }
 ##' fit a simple model, bootstrap the results
 ##'
 ##' see above
@@ -85,6 +106,42 @@ generate_bootstrap_results <- function(df, ind) {
         names(trainresults) <- names(ind)
         trainresults
 }
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title split_data
+##' @param df 
+##' @return 
+##' @author richie
+##' @export
+split_data <- function(df) {
+    set.seed(34)
+    ppr_train_indices <- with(
+      df,
+      caret::createDataPartition(log_price,
+                                 times = 1,
+                                 p = 0.7,
+                                 list = FALSE
+                                 )
+    ) %>% as.vector() #because tibble sucks
+    ppr_train <- df[ppr_train_indices, ]
+
+    ppr_not_train <- df[-ppr_train_indices, ]
+    ppr_test_indices <- with(
+      ppr_not_train,
+      caret::createDataPartition(log_price,
+                                 times = 1,
+                                 p = 0.5,
+                                 list = FALSE
+                                 )
+    ) %>% as.vector()
+
+    ppr_test <- ppr_not_train[ppr_test_indices, ]
+    ppr_validation <- ppr_not_train[-ppr_test_indices, ]
+    readr::write_csv(x = ppr_validation, path = "ppr_validation_set.csv")
+    rm(ppr_validation)
+    return(list(train=ppr_train, test=ppr_test))
+  }
 
 load_data <- function(path) {
   ppr <- readxl::read_excel(path, sheet = "PPR-ALL")
@@ -131,6 +188,14 @@ invert_field <- function(df, field) {
   return(ppr5)
 }
 
+##' .. content for \description{} (no empty lines) ..
+##'
+##' .. content for \details{} ..
+##' @title fix_property_description
+##' @param df 
+##' @return a data.frame
+##' @author richie
+##' @export
 fix_property_description  <- function(df) {
 remove_irish <- dplyr::mutate(df, prop_description = ifelse(
         grepl("cothrom", x = property_size_description),

@@ -100,9 +100,9 @@ with(ppr5, table(description_of_property))
 
 ppr10 <- fix_property_description(ppr5)
 ppr_data_cleaning_done <- ppr10
-save_test_data(ppr_data_cleaning_done)
-
-ppr_train_test <- split_data(ppr10)
+readr::write_csv(ppr_data_cleaning_done, path = "ppr_data_cleaning_done.csv")
+message("got here")
+ppr_train_test <- split_data(ppr_data_cleaning_done)
 ppr_train  <- ppr_train_test$train
 
 ppr_train2 <- rename(ppr_train, date_of_sale = date_of_sale_dd_mm_yyyy) %>%
@@ -111,7 +111,7 @@ ppr_train2 <- rename(ppr_train, date_of_sale = date_of_sale_dd_mm_yyyy) %>%
                 month = lubridate::month(date_of_sale),
                 quarter = lubridate::quarter(date_of_sale)
         )
-ppr_bootstrap_indices <- with(ppr_train, createResample(log_price, times = 100))
+ppr_bootstrap_indices <- with(ppr_train, caret::createResample(log_price, times = 100))
 
 g <- generate_bootstrap_results(ppr_train2, ppr_bootstrap_indices)
 hist(sapply(g, mean)^10)
