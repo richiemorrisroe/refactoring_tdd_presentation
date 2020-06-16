@@ -9,7 +9,7 @@ ppr_train3 <- select(
         -address,
         -price, -date_of_sale
 )
-ppr_train_s <- sample_frac(ppr_train3, size = 0.1)
+ppr_train_s <- ppr_train3
 ppr_test_samp <- sample_frac(ppr_train3,
         size = 0.05
 )
