@@ -180,7 +180,7 @@ python has lots of examples but R has very few.
 - It supports R (and apparently loads of other languages too)
 #+begin_src sh
 conda create -n PPR-r r=3.6.3 
-conda env export --name PPR-r > PPR-r.yml
+conda env export --name PPR-r > ppr_r.yml
 #+end_src
 * First, generate or create ground truth data
 - Our scripts need to be run in order
@@ -297,7 +297,7 @@ test_that(
 * Lazy Man's approach to testing
 - This is my philosophy
 - Minimum testing for maximum output
-- We add a few write_csv calls for each of our outputs
+- We write our current objects to a file
 - And use that data for testing
 * Write a function to make this easier: loading
 - We have lots of annoying relative paths in our test data loading
@@ -309,7 +309,7 @@ test_that(
     return(result)
   }
 #+end_src
-#+begin_src R :session :tangle ppr/R/testing.R
+#+begin_src R :session :tangle ppr/R/testing.R :exports none
    ##' .. content for \description{} (no empty lines) ..
    ##'
    ##' .. content for \details{} ..
@@ -346,7 +346,8 @@ test_that(
    data(ppr)
    ppr_test_load_save  <- ppr
    save_test_data(ppr_test_load_save)
-   expect_equal(ppr, load_test_data("ppr_test_load_save_test_data.rds"))
+   expect_equal(ppr,
+                load_test_data("ppr_test_load_save_test_data.rds"))
  #+end_src
 - This actually tests both functions, and handles the invariant we
   care about (that the saved data should be easily comparable to the test data)
@@ -355,13 +356,16 @@ test_that(
    save_test_data <- function(obj) {
      obj_name  <- substitute(obj)
      bpath  <- ""
-     save_file_name  <- paste0(bpath, obj_name, "_test_data", ".rds")
+     save_file_name  <- paste0(bpath,
+                               obj_name,
+                               "_test_data",
+                               ".rds")
      saveRDS(obj, save_file_name)
      return(NULL)
      }
  #+end_src
 * Move existing functions to file
-- Move the functions we have to a file
+- Move the functions we have to a file (move function refactoring)
 - Change our script to load the functions from this file
 #+begin_src R :session :tangle ppr/R/ppr.R :exports none
   ##' remove non ASCII characters from name vector of df
@@ -601,7 +605,7 @@ test_that(
    #+end_src
 - We just remove the part of the gsub call that matches dots
 - Now all our tests pass
-* Generate Bootstrap Results :nexport:
+* Generate Bootstrap Results :noexport:
 - I'll leave testing this for now, as I probably need to do the
   feature normalisation first
 * Break out components
@@ -617,8 +621,8 @@ test_that(
 
 * Write test for new function
   #+begin_src R :tangle ppr/tests/testthat/test_first.R
-    test_df_output  <- readr::read_csv("../../inst/mark_values_as_large_test_data_done.csv")
-    test_df_input  <- readr::read_csv("../../inst/mark_values_as_large_test_data.csv")
+    test_df_output  <- load_test_data("../../inst/mark_values_as_large_test_data_done.rds")
+    test_df_input  <- load_test_data("../../inst/mark_values_as_large_test_data.rds")
     test_that('mark values as large works', {
       expect_equal(mark_values_as_large(test_df_input,
                                         large = 1e6),
@@ -627,7 +631,18 @@ test_that(
 
   #+end_src
 * Write the actual function
-#+begin_src R :tangle ppr/R/ppr.R
+  #+begin_src R :session :exports code
+    mark_values_as_large <- function(df, large) {
+    large <- rlang::enquo(large)
+    ppr3 <- dplyr::mutate(df,
+                          is_big =
+                            ifelse(
+                              .data$price >= !!large,
+                              "Big", "Not Big"))
+    return(ppr3)
+    }
+  #+end_src
+#+begin_src R :tangle ppr/R/ppr.R :exports none
   ##' .. content for \description{} (no empty lines) ..
   ##'
   ##' .. content for \details{} ..
@@ -652,6 +667,8 @@ test_that(
 * Opposite but Equal
 - Sometimes, we actually want the function to be inlined
 - This is called *inline function*
+- This is most useful when you want to refactor code into different
+  functions (because they do different things, or for naming purposes)
 * Convert price to log
 - Logs are great
 - In general, if you have problems with a response or predictor
@@ -691,7 +708,7 @@ test_that(
       }
 #+end_src
 - This is beginning to annoy me a little less, from repetition
-* What not to functionalise
+* What not to functionalise :noexport:
 - Exploratory analysis
 - There's loads of that in my scripts, for example
 #+begin_src R :session
@@ -714,7 +731,7 @@ head(post_codes_table, n = 12)
                      "No"
              )
      ) %>%
-             select(-not_full_market_price) # remove old var - what happens if we don't?
+             select(-not_full_market_price) 
    #+end_src
 - So this is only done once, and is pretty specific
 - But it handles some ugly, ugly names
@@ -946,7 +963,6 @@ rm(ppr_validation)
 - Passes the tests
   #+begin_src R :session :tangle ppr/R/ppr.R
     split_data <- function(df) {
-      set.seed(34)
       ppr_train_indices <- with(
         df,
         caret::createDataPartition(log_price,
@@ -1072,7 +1088,7 @@ usethis::use_data(ppr_pobal, overwrite = TRUE)
   data to the package
 - Also note that sampling breaks the integration tests, unless you use
   set.seed
-* Write Some Tests
+* Write Some Tests :noexport:
 
 * Vtreat Pipeline 
   #+begin_src R :session
@@ -1106,7 +1122,9 @@ sapply(ppr_pobal, n_distinct) %>%
 #+end_src
 - This code is unique
 - But the pattern is common
-#+begin_src R :exports none
+* Functionalise all the things!
+
+#+begin_src R :exports code
   count_distinct_values <- function(df) {
     result  <- sapply(df, dplyr::n_distinct) %>%
       as.data.frame() %>%
@@ -1313,11 +1331,19 @@ sapply(ppr_pobal, n_distinct) %>%
               expect_equal(count_proportion_missing(ppr_pobal),
                            missings_old))
   #+end_src
-
+* Conclusions
+- Automated testing is a very, very useful practice
+- It's a foundation for refactoring, which improves code quality immensely
+- This talk has demonstrated how to get started
+- Once you have tests, test-driven development is an extremely good practice [fn:10]
+- I did a simpler [[https://github.com/richiemorrisroe/geocoder][example in Python]]
+- And here's a [[https://github.com/richiemorrisroe/p0ker][poker simulation in python, which I've developed using TDD]]
+- And [[https://github.com/richiemorrisroe/refactoring_tdd_presentation][the repository for this talk is here]]
 * Further Work
 - I haven't covered that much [[https://www.informit.com/store/refactoring-improving-the-design-of-existing-code-9780134757599][refactoring]]
 - I haven't covered that much [[https://www.amazon.co.uk/Test-Driven-Development-Addison-Wesley-Signature/dp/0321146530][TDD]]
 - I haven't covered that much [[https://www.amazon.co.uk/Working-Effectively-Legacy-Michael-Feathers/dp/0131177052/][working with legacy code]]
+
 - But hopefully I have given an introduction to them
 
 ** Top Six Refactorings :noexport:
@@ -1345,6 +1371,8 @@ sapply(ppr_pobal, n_distinct) %>%
 *** Split Phase
 
 * Footnotes
+
+[fn:10] at least I have found it so 
 
 [fn:9] always make sure your tests fail when they're supposed to 
 
